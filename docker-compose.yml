@@ -1,0 +1,87 @@
+services:
+  emqx:
+    image: emqx/emqx:5.6.1
+    container_name: smarthome_emqx
+    restart: always
+    ports:
+      - "1883:1883"       # MQTT TCP Port
+      - "8083:8083"       # MQTT WebSocket Port
+      - "18083:18083"     # EMQX Dashboard Web UI (default: admin / public)
+    environment:
+      - EMQX_ALLOW_ANONYMOUS=true
+    volumes:
+      - emqx_data:/opt/emqx/data
+    networks:
+      - smarthome_net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: smarthome_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: smarthome
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - smarthome_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smarthome_backend
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgres://postgres:secretpassword@postgres:5432/smarthome?schema=public
+      MQTT_BROKER_URL: mqtt://emqx:1883
+      CLIENT_URL: http://localhost:3000
+    depends_on:
+      - postgres
+      - emqx
+    networks:
+      - smarthome_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smarthome_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - smarthome_net
+
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: smarthome_homeassistant
+    restart: always
+    privileged: true
+    ports:
+      - "8123:8123"
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      - ./ha_config:/config
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - emqx
+    networks:
+      - smarthome_net
+
+volumes:
+  emqx_data:
+  pg_data:
+
+networks:
+  smarthome_net:
+    driver: bridge
