@@ -1,12 +1,33 @@
 services:
-  emqx:
-    image: emqx/emqx:5.6.1
-    container_name: smarthome_emqx
+  # ==========================================================
+  # TẦNG 2: BROKER LOCAL (GATEWAY MẠNG NỘI BỘ - SLIDE 19)
+  # Thiết bị ESP32 chỉ biết broker này, không nối ra Internet
+  # ==========================================================
+  broker_local:
+    image: eclipse-mosquitto:2.0
+    container_name: smarthome_broker_local
     restart: always
     ports:
-      - "1883:1883"       # MQTT TCP Port
-      - "8083:8083"       # MQTT WebSocket Port
-      - "18083:18083"     # EMQX Dashboard Web UI (default: admin / public)
+      - "1883:1883"       # Cổng cho ESP32 mạng nội bộ kết nối
+    volumes:
+      - ./gateway_broker/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    depends_on:
+      - broker_server
+    networks:
+      - smarthome_net
+
+  # ==========================================================
+  # TẦNG 3: BROKER SERVER (MÁY CHỦ TRUNG TÂM - SLIDE 19)
+  # Nhận dữ liệu qua cầu Bridge từ Broker Local, có xác thực
+  # ==========================================================
+  broker_server:
+    image: emqx/emqx:5.6.1
+    container_name: smarthome_broker_server
+    restart: always
+    ports:
+      - "1884:1883"       # Cổng TCP Broker Server
+      - "8083:8083"       # Cổng WebSocket
+      - "18083:18083"     # Dashboard quản trị EMQX
     environment:
       - EMQX_ALLOW_ANONYMOUS=true
     volumes:
@@ -14,6 +35,9 @@ services:
     networks:
       - smarthome_net
 
+  # ==========================================================
+  # CƠ SỞ DỮ LIỆU POSTGRESQL (TẦNG 4)
+  # ==========================================================
   postgres:
     image: postgres:16-alpine
     container_name: smarthome_postgres
@@ -23,12 +47,16 @@ services:
       POSTGRES_PASSWORD: secretpassword
       POSTGRES_DB: smarthome
     ports:
-      - "5433:5432"
+      - "5433:5432"       # Cổng 5433 tránh đụng Postgres 5432 của Windows
     volumes:
       - pg_data:/var/lib/postgresql/data
     networks:
       - smarthome_net
 
+  # ==========================================================
+  # TẦNG 4: BACKEND + DATABASE
+  # Backend CHỈ KẾT NỐI MỘT ĐIỂM: Broker Server (Slide 19)
+  # ==========================================================
   backend:
     build:
       context: ./backend
@@ -40,14 +68,17 @@ services:
     environment:
       PORT: 4000
       DATABASE_URL: postgres://postgres:secretpassword@postgres:5432/smarthome?schema=public
-      MQTT_BROKER_URL: mqtt://emqx:1883
+      MQTT_BROKER_URL: mqtt://broker_server:1883
       CLIENT_URL: http://localhost:3000
     depends_on:
       - postgres
-      - emqx
+      - broker_server
     networks:
       - smarthome_net
 
+  # ==========================================================
+  # TẦNG 5: WEB DASHBOARD (REACTJS - SLIDE 19)
+  # ==========================================================
   frontend:
     build:
       context: ./frontend
@@ -61,6 +92,7 @@ services:
     networks:
       - smarthome_net
 
+  # Hệ thống Home Assistant tích hợp (kết nối vào Broker Server)
   homeassistant:
     image: ghcr.io/home-assistant/home-assistant:stable
     container_name: smarthome_homeassistant
@@ -72,9 +104,8 @@ services:
       - TZ=Asia/Ho_Chi_Minh
     volumes:
       - ./ha_config:/config
-      - /etc/localtime:/etc/localtime:ro
     depends_on:
-      - emqx
+      - broker_server
     networks:
       - smarthome_net
 

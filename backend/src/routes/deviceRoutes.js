@@ -63,4 +63,65 @@ router.post('/:id/command', async (req, res) => {
   }
 });
 
+// Đăng ký thiết bị mới (Slide 18 yêu cầu bắt buộc: Đăng ký thiết bị)
+router.post('/', async (req, res) => {
+  try {
+    const { name, type, mqttTopic, nodeId } = req.body;
+
+    if (!name || !type || !mqttTopic || !nodeId) {
+      return res.status(400).json({ error: 'Vui lòng điền đầy đủ tên, loại thiết bị, MQTT topic và Node ID' });
+    }
+
+    const newDevice = await prisma.device.create({
+      data: {
+        name,
+        type,
+        mqttTopic,
+        nodeId,
+        state: 'OFF',
+      },
+    });
+
+    // Tạo Activity Log ghi nhận đăng ký
+    const log = await prisma.activityLog.create({
+      data: {
+        deviceId: newDevice.id,
+        action: `Đăng ký thiết bị mới: ${newDevice.name} (${newDevice.mqttTopic})`,
+        source: 'manual',
+      },
+      include: { device: true },
+    });
+    emitActivityLog(log);
+
+    res.status(201).json(newDevice);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Hủy đăng ký / Xóa thiết bị
+router.delete('/:id', async (req, res) => {
+  try {
+    const deviceId = parseInt(req.params.id);
+    const existing = await prisma.device.findUnique({ where: { id: deviceId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Thiết bị không tồn tại' });
+    }
+
+    await prisma.device.delete({ where: { id: deviceId } });
+
+    const log = await prisma.activityLog.create({
+      data: {
+        action: `Hủy đăng ký thiết bị: ${existing.name}`,
+        source: 'manual',
+      },
+    });
+    emitActivityLog(log);
+
+    res.json({ success: true, message: 'Đã xóa thiết bị thành công' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

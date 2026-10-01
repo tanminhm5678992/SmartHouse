@@ -13,6 +13,8 @@ const axiosClient = axios.create({
 export const deviceApi = {
   getAll: () => axiosClient.get('/devices'),
   sendCommand: (id, action) => axiosClient.post(`/devices/${id}/command`, { action }),
+  create: (data) => axiosClient.post('/devices', data),
+  delete: (id) => axiosClient.delete(`/devices/${id}`),
 };
 
 export const sensorApi = {

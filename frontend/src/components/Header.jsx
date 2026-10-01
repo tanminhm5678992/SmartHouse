@@ -28,6 +28,12 @@ export default function Header({ activeTab, setActiveTab, isSocketConnected }) {
           <Activity size={16} /> Đồ Thị Cảm Biến
         </button>
         <button
+          className={`nav-tab-btn ${activeTab === 'devices' ? 'active' : ''}`}
+          onClick={() => setActiveTab('devices')}
+        >
+          <Cpu size={16} /> Đăng Ký Thiết Bị
+        </button>
+        <button
           className={`nav-tab-btn ${activeTab === 'automations' ? 'active' : ''}`}
           onClick={() => setActiveTab('automations')}
         >

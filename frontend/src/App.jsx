@@ -6,10 +6,11 @@ import DeviceCard from './components/DeviceCard';
 import ChartSection from './components/ChartSection';
 import AutomationBuilder from './components/AutomationBuilder';
 import ActivityLogView from './components/ActivityLogView';
+import DeviceManager from './components/DeviceManager';
 
 import { deviceApi, sensorApi, automationApi, logApi } from './api/axiosClient';
 import { useSocket } from './hooks/useSocket';
-import { Cpu, Zap } from 'lucide-react';
+import { Cpu, Zap, Plus } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -139,8 +140,15 @@ export default function App() {
               <div className="section-title">
                 <Zap size={20} color="var(--primary)" />
                 <span>Thiết Bị Chấp Hành (Actuators)</span>
-                <span className="tag">2 Relay • 4 LED</span>
+                <span className="tag">Điều Khiển Thực Tế</span>
               </div>
+              <button
+                className="btn-primary"
+                style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+                onClick={() => setActiveTab('devices')}
+              >
+                <Plus size={14} /> Đăng Ký Thiết Bị
+              </button>
             </div>
 
             <div className="devices-grid">
@@ -161,6 +169,13 @@ export default function App() {
 
       {activeTab === 'charts' && (
         <ChartSection liveData={liveSensor} />
+      )}
+
+      {activeTab === 'devices' && (
+        <DeviceManager
+          devices={devices}
+          onReload={loadInitialData}
+        />
       )}
 
       {activeTab === 'automations' && (
