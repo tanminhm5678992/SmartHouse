@@ -30,6 +30,7 @@ const char* CLIENT_ID     = "ESP32C3_Node2_BedRoom";
 #define PIN_DHT11       4
 #define PIN_RELAY2      5
 #define PIN_LED3        6
+#define PIN_LED3_GND    3     // Chân GND ảo cho chân ngắn (-) của LED (xuất 0V)
 #define PIN_LED_STATUS  7
 
 #define DHTTYPE         DHT11
@@ -151,6 +152,10 @@ void setup() {
   pinMode(PIN_RELAY2, OUTPUT);
   pinMode(PIN_LED3, OUTPUT);
   pinMode(PIN_LED_STATUS, OUTPUT);
+
+  // Cấu hình chân GPIO 3 làm chân GND (0V) cho chân ngắn của LED
+  pinMode(PIN_LED3_GND, OUTPUT);
+  digitalWrite(PIN_LED3_GND, LOW);
 
   setRelay(false);
   setLed(false);
