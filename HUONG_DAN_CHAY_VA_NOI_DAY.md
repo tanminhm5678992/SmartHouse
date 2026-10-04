@@ -4,9 +4,9 @@
 
 ## PHẦN 1: CÁCH NỐI DÂY PHẦN CỨNG (DÙNG 2 BOARD ESP32-C3)
 
-> 💡 **Giải pháp thông minh**: 
-> - Mỗi chân chỉ cắm đúng 1 lỗ, không cần bảng testboard, không cần xoắn dây.
-> - Chân ngắn (-) của LED được cắm vào **GPIO 3** (đã được cấu hình trong code làm chân GND ảo xuất mức 0V).
+> 💡 **Giải pháp thông minh**:
+> - Mỗi chân ESP32 chỉ cắm đúng **1 lỗ duy nhất**, không dùng bảng testboard, không xoắn dây.
+> - Dùng GPIO xuất 3.3V (VCC ảo) và 0V (GND ảo) cho linh kiện nhỏ → mỗi chân phần cứng 1 dây.
 
 ---
 
@@ -52,30 +52,76 @@
 ---
 
 ### 🛏️ 2. BOARD 2: PHÒNG NGỦ (ESP32 #2)
-> **Linh kiện**: 1x ESP32-C3 + 1x Cảm biến DHT11 + 1x Đèn LED (+ điện trở 220Ω)
+> **Linh kiện**: 1x ESP32-C3 + 1x Module Relay 1 kênh + 1x Cảm biến DHT11 + 1x Quạt mini 5V + 1x Đèn LED (2 chân)
 
 ```
-   CẢM BIẾN DHT11                ESP32-C3 BOARD 2
-  ┌──────────────┐              ┌────────────────┐
-  │  VCC (dấu +) ├──────────────┤ 3V3            │
-  │  GND (dấu -) ├──────────────┤ G              │
-  │ DATA (dấu S) ├──────────────┤ GPIO 4         │
-  └──────────────┘              │                │
-   BÓNG ĐÈN LED 2               │                │
-  ┌──────────────┐              │                │
-  │ Chân dài (+) ├──[Trở 220Ω]──┤ GPIO 6         │
-  │ Chân ngắn(-) ├──────────────┤ GPIO 3 (GND ảo)│
-  └──────────────┘              └────────────────┘
+   CẢM BIẾN DHT11                ESP32-C3 BOARD 2 (PHÒNG NGỦ)
+  ┌──────────────┐              ┌──────────────────────┐
+  │  VCC (dấu +) ├──────────────┤ GPIO 1 (VCC ảo 3.3V)│
+  │  GND (dấu -) ├──────────────┤ GPIO 2 (GND ảo 0V)  │
+  │ DATA (dấu S) ├──────────────┤ GPIO 4               │
+  └──────────────┘              │                      │
+   MODULE RELAY 1 KÊNH          │                      │
+  ┌──────────────┐              │                      │
+  │          DC+ ├──────────────┤ 3V3  ← cuộn relay    │
+  │          DC- ├──────────────┤ G    ← GND relay      │
+  │           IN ├──────────────┤ GPIO 5               │
+  │          COM ├──┐           │                      │
+  │           NO ├──┘           └──────────────────────┘
+  └──────────────┘
+   QUẠT MINI 5V
+  ┌──────────────┐              ┌──────────────────────┐
+  │  Dây Đỏ (+)  ├──────────────┤ 5V   ← nguồn quạt    │
+  │  Dây Đen (-) ├──────────────┤ COM  (trung gian)    │
+  └──────────────┘              └──────────────────────┘
+   (COM → NO → mạch kín khi relay BẬT)
+   BÓNG ĐÈN LED 2
+  ┌──────────────┐              ┌──────────────────────┐
+  │ Chân dài (+) ├──────────────┤ GPIO 6               │
+  │ Chân ngắn(-) ├──────────────┤ GPIO 7 (GND ảo 0V)  │
+  └──────────────┘              └──────────────────────┘
 ```
+
+> ✅ **Mỗi chân ESP32 Node 2 chỉ có đúng 1 dây**:
+> - `GPIO 1` xuất 3.3V → VCC ảo cho DHT11 (code: `OUTPUT HIGH`).
+> - `GPIO 2` xuất 0V → GND ảo cho DHT11 (code: `OUTPUT LOW`).
+> - `GPIO 7` xuất 0V → GND ảo cho LED (code: `OUTPUT LOW`).
+> - `3V3` chỉ có **1 dây**: Relay DC+ (cuộn relay).
+> - `G` chỉ có **1 dây**: Relay DC-.
+> - `5V` chỉ có **1 dây**: Quạt Dây Đỏ.
+> - `COM` và `NO` của relay **không cắm vào ESP32** — nối với Dây Đen quạt bên ngoài.
 
 #### Chi tiết cắm từng sợi dây:
 1. **Nối Cảm biến DHT11**:
-   - `VCC` (hoặc `+`) ──► Cắm vào chân **3V3** của ESP32 Con 2.
-   - `GND` (hoặc `-`) ──► Cắm vào chân **`G`** của ESP32 Con 2.
-   - `DATA` (hoặc `OUT`/`S`) ──► Cắm vào chân **GPIO 4** của ESP32 Con 2.
-2. **Nối Đèn LED 2 (Đèn ngủ)**:
-   - Chân dài `(+)` qua 1 điện trở 220Ω ──► Cắm vào chân **GPIO 6** của ESP32 Con 2.
-   - Chân ngắn `(-)` ──► Cắm vào chân **GPIO 3** của ESP32 Con 2.
+   - `VCC` ──► Cắm vào chân **`GPIO 1`** của ESP32 *(VCC ảo — code xuất 3.3V, DHT11 chỉ cần ~1mA)*.
+   - `GND` ──► Cắm vào chân **`GPIO 2`** của ESP32 *(GND ảo — code xuất 0V)*.
+   - `DATA` ──► Cắm vào chân **`GPIO 4`** của ESP32.
+2. **Nối Module Relay**:
+   - `DC+` ──► Cắm vào chân **`3V3`** của ESP32 *(1 dây duy nhất vào 3V3)*.
+   - `DC-` ──► Cắm vào chân **`G`** của ESP32 *(1 dây duy nhất vào G)*.
+   - `IN`  ──► Cắm vào chân **`GPIO 5`** của ESP32 *(kích relay: LOW=BẬT, HIGH=TẮT)*.
+   - `COM` ──► Nối thẳng sang **Dây Đen (-)** của quạt mini *(không cắm vào ESP32)*.
+   - `NO`  ──► Nối thẳng sang **Dây Đen (-)** của quạt mini *(nối chung với COM tại quạt)*.
+3. **Nối Quạt Mini 5V** *(relay làm công tắc, quạt dùng nguồn 5V)*:
+   - `Dây Đỏ (+)` ──► Cắm vào chân **`5V`** của ESP32 *(1 dây duy nhất vào 5V)*.
+   - `Dây Đen (-)` ──► Nhận từ **`COM` và `NO`** của Relay *(nối trung gian, không cắm vào ESP32)*.
+4. **Nối Đèn LED 2 chân** *(GPIO 6 và GPIO 7 nằm NGAY CẠNH NHAU → cắm thẳng LED vào 2 lỗ liền nhau)*:
+   - Chân dài `(+)` ──► Cắm vào chân **`GPIO 6`** của ESP32.
+   - Chân ngắn `(-)` ──► Cắm vào chân **`GPIO 7`** của ESP32 *(GND ảo — code xuất 0V)*.
+
+#### Tổng kết chân ESP32 Node 2 — mỗi chân đúng 1 dây, không ngoại lệ:
+| Chân ESP32 | Chỉ nối với | Ghi chú |
+|---|---|---|
+| `GPIO 1` | DHT11 VCC | 1 dây — VCC ảo (code xuất 3.3V) |
+| `GPIO 2` | DHT11 GND | 1 dây — GND ảo (code xuất 0V) |
+| `GPIO 4` | DHT11 DATA | 1 dây |
+| `GPIO 5` | Relay IN | 1 dây |
+| `GPIO 6` | LED chân dài | 1 dây |
+| `GPIO 7` | LED chân ngắn | 1 dây — GND ảo (code xuất 0V) |
+| `GPIO 8` | LED mạng tích hợp | nội bộ |
+| `3V3` | Relay DC+ | 1 dây |
+| `G` | Relay DC- | 1 dây |
+| `5V` | Quạt Dây Đỏ | 1 dây |
 
 ---
 

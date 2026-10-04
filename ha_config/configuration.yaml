@@ -73,7 +73,9 @@ mqtt:
       state_on: "ON"
       state_off: "OFF"
 
-    # LED 1 - Đèn bàn
+  # Đèn LED điều khiển được độ sáng (PWM): gửi lệnh dạng "SET:<0-100>" tới topic command
+  light:
+    # LED 1 - Đèn bàn làm việc
     - name: "LED 1 Đèn Bàn"
       unique_id: "led_1_desk"
       state_topic: "home/device/led1/state"
@@ -82,6 +84,9 @@ mqtt:
       payload_off: "OFF"
       state_on: "ON"
       state_off: "OFF"
+      brightness_command_topic: "home/device/led1/command"
+      brightness_command_template: "SET:{{ (value | int / 255 * 100) | round(0) | int }}"
+      brightness_scale: 255
 
     # LED 3 - Đèn ngủ
     - name: "LED 3 Đèn Ngủ"
@@ -92,6 +97,9 @@ mqtt:
       payload_off: "OFF"
       state_on: "ON"
       state_off: "OFF"
+      brightness_command_topic: "home/device/led3/command"
+      brightness_command_template: "SET:{{ (value | int / 255 * 100) | round(0) | int }}"
+      brightness_scale: 255
 
 # Kịch bản tự động hóa mẫu trên Home Assistant
 automation:

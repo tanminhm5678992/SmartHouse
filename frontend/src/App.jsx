@@ -7,8 +7,9 @@ import ChartSection from './components/ChartSection';
 import AutomationBuilder from './components/AutomationBuilder';
 import ActivityLogView from './components/ActivityLogView';
 import DeviceManager from './components/DeviceManager';
+import ScheduleManager from './components/ScheduleManager';
 
-import { deviceApi, sensorApi, automationApi, logApi } from './api/axiosClient';
+import { deviceApi, sensorApi, automationApi, scheduleApi, logApi } from './api/axiosClient';
 import { useSocket } from './hooks/useSocket';
 import { Cpu, Zap, Plus } from 'lucide-react';
 
@@ -18,22 +19,25 @@ export default function App() {
   const [sensorData, setSensorData] = useState({ node1: null, node2: null });
   const [nodeStatuses, setNodeStatuses] = useState({ node1: 'offline', node2: 'offline' });
   const [automations, setAutomations] = useState([]);
+  const [schedules, setSchedules] = useState([]);
   const [logs, setLogs] = useState([]);
   const [liveSensor, setLiveSensor] = useState(null);
 
   // Tải dữ liệu ban đầu từ REST API
   const loadInitialData = useCallback(async () => {
     try {
-      const [devicesRes, sensorsRes, automationsRes, logsRes] = await Promise.allSettled([
+      const [devicesRes, sensorsRes, automationsRes, schedulesRes, logsRes] = await Promise.allSettled([
         deviceApi.getAll(),
         sensorApi.getLatest(),
         automationApi.getAll(),
+        scheduleApi.getAll(),
         logApi.getAll(),
       ]);
 
       if (devicesRes.status === 'fulfilled') setDevices(devicesRes.value.data);
       if (sensorsRes.status === 'fulfilled') setSensorData(sensorsRes.value.data);
       if (automationsRes.status === 'fulfilled') setAutomations(automationsRes.value.data);
+      if (schedulesRes.status === 'fulfilled') setSchedules(schedulesRes.value.data);
       if (logsRes.status === 'fulfilled') setLogs(logsRes.value.data);
     } catch (err) {
       console.error('Lỗi khi tải dữ liệu ban đầu:', err);
@@ -54,7 +58,15 @@ export default function App() {
 
   const handleDeviceState = useCallback((updatedDevice) => {
     setDevices((prev) =>
-      prev.map((d) => (d.id === updatedDevice.id ? { ...d, state: updatedDevice.state } : d))
+      prev.map((d) =>
+        d.id === updatedDevice.id
+          ? {
+              ...d,
+              state: updatedDevice.state,
+              ...(updatedDevice.brightness !== undefined && { brightness: updatedDevice.brightness }),
+            }
+          : d
+      )
     );
   }, []);
 
@@ -84,6 +96,24 @@ export default function App() {
     } catch (err) {
       console.error('Lỗi gửi lệnh điều khiển:', err);
       // Rollback nếu thất bại
+      loadInitialData();
+    }
+  };
+
+  // Chỉnh độ sáng đèn LED (PWM 0-100%)
+  const handleBrightnessChange = async (id, brightness) => {
+    try {
+      // Optimistic update
+      setDevices((prev) =>
+        prev.map((d) =>
+          d.id === id
+            ? { ...d, brightness, state: brightness > 0 ? 'ON' : 'OFF' }
+            : d
+        )
+      );
+      await deviceApi.setBrightness(id, brightness);
+    } catch (err) {
+      console.error('Lỗi chỉnh độ sáng:', err);
       loadInitialData();
     }
   };
@@ -157,6 +187,7 @@ export default function App() {
                   key={device.id}
                   device={device}
                   onToggle={handleToggleDevice}
+                  onBrightness={handleBrightnessChange}
                 />
               ))}
             </div>
@@ -175,12 +206,21 @@ export default function App() {
         <DeviceManager
           devices={devices}
           onReload={loadInitialData}
+          onToggle={handleToggleDevice}
         />
       )}
 
       {activeTab === 'automations' && (
         <AutomationBuilder
           automations={automations}
+          devices={devices}
+          onReload={loadInitialData}
+        />
+      )}
+
+      {activeTab === 'schedules' && (
+        <ScheduleManager
+          schedules={schedules}
           devices={devices}
           onReload={loadInitialData}
         />

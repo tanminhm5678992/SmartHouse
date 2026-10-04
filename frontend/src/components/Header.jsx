@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Activity, Cpu, Bell, Sliders } from 'lucide-react';
+import { Home, Activity, Cpu, Bell, Sliders, CalendarClock } from 'lucide-react';
 
 export default function Header({ activeTab, setActiveTab, isSocketConnected }) {
   return (
@@ -38,6 +38,12 @@ export default function Header({ activeTab, setActiveTab, isSocketConnected }) {
           onClick={() => setActiveTab('automations')}
         >
           <Sliders size={16} /> Tự Động Hóa
+        </button>
+        <button
+          className={`nav-tab-btn ${activeTab === 'schedules' ? 'active' : ''}`}
+          onClick={() => setActiveTab('schedules')}
+        >
+          <CalendarClock size={16} /> Lịch Hẹn
         </button>
         <button
           className={`nav-tab-btn ${activeTab === 'logs' ? 'active' : ''}`}

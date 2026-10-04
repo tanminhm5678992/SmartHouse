@@ -93,3 +93,37 @@ Nếu chưa cắm ESP32 thật, bạn có thể dùng công cụ **MQTTX** trên
 3. Lập tức kiểm tra:
    - Web Frontend tại `http://localhost:3000` sẽ cập nhật số đo và vẽ đường đồ thị realtime.
    - Nếu nhiệt độ > 32°C, hệ thống sẽ tự động kích hoạt luật bật Relay 1 và ghi nhật ký hoạt động!
+
+---
+
+## 6. Tính Năng Mở Rộng (Mới Cập Nhật)
+
+### 6.1. Bật/Tắt Thiết Bị Theo Lịch (Scheduler)
+- Tab **"Lịch Hẹn"** trên giao diện cho phép tạo lịch hẹn gồm: **Giờ BẬT**, **Giờ TẮT**, chọn **ngày áp dụng** trong tuần (T2...CN) và thiết bị áp dụng.
+- Có thể bật/tắt, chỉnh sửa hoặc xóa từng lịch hẹn.
+- Backend chạy bộ lập lịch quét mỗi **20 giây** (xem `backend/src/services/scheduleService.js`), khi tới giờ sẽ tự gửi lệnh MQTT, cập nhật CSDL và ghi vào **Nhật Ký Hoạt Động** với nguồn `auto`.
+- Lịch hẹn chạy theo giờ hệ thống (múi giờ Asia/Ho_Chi_Minh), đã chống kích hoạt trùng trong cùng một phút.
+
+### 6.2. Thanh Tùy Chỉnh Độ Sáng Đèn LED (PWM)
+- Thẻ thiết bị loại `led` hiển thị **thanh trượt độ sáng 0-100%** trên Dashboard.
+- Backend gửi lệnh MQTT dạng `SET:<0-100>` tới topic `home/device/<slug>/command` (ví dụ `SET:50`).
+- Firmware ESP32 dùng **PWM (LEDC)** để điều chế độ sáng; hỗ trợ cả Arduino-ESP32 core 2.x (`ledcSetup`/`ledcAttachPin`) và 3.x (`ledcAttach`).
+- **Định dạng lệnh MQTT điều khiển thiết bị:**
+
+  | Payload | Ý nghĩa |
+  | :---: | :--- |
+  | `ON` | Bật thiết bị (LED sáng 100%) |
+  | `OFF` | Tắt thiết bị (LED duty 0%) |
+  | `SET:0` ... `SET:100` | Chỉnh độ sáng LED theo phần trăm (PWM) |
+
+### 6.3. Cập Nhật Cơ Sở Dữ Liệu
+Schema có thêm cột `devices.brightness` và bảng `schedules`. Chạy 1 trong 2 cách sau để áp dụng:
+```bash
+# Cách 1: Chạy lại toàn bộ bằng Docker (tự động chạy prisma db push)
+docker compose up -d --build
+
+# Cách 2: Cập nhật schema trực tiếp khi chạy backend trên máy
+cd backend
+npx prisma db push
+```
+

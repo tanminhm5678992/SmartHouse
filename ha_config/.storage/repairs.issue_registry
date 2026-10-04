@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "minor_version": 2,
+  "key": "repairs.issue_registry",
+  "data": {
+    "issues": [
+      {
+        "created": "2026-10-04T07:28:27.184778+00:00",
+        "dismissed_version": null,
+        "domain": "homeassistant",
+        "is_persistent": false,
+        "issue_id": "country_not_configured"
+      },
+      {
+        "created": "2026-10-04T07:28:27.418680+00:00",
+        "dismissed_version": null,
+        "domain": "http",
+        "is_persistent": false,
+        "issue_id": "deprecated_yaml"
+      },
+      {
+        "created": "2026-10-04T07:28:32.528263+00:00",
+        "dismissed_version": null,
+        "domain": "mqtt",
+        "is_persistent": false,
+        "issue_id": "yaml_setup_without_active_setup"
+      },
+      {
+        "created": "2026-10-04T07:33:33.273499+00:00",
+        "dismissed_version": null,
+        "domain": "http",
+        "is_persistent": false,
+        "issue_id": "yaml_still_present_after_migration"
+      }
+    ]
+  }
+}

@@ -101,6 +101,7 @@ function connectMQTT() {
             name: device.name,
             nodeId: device.nodeId,
             state,
+            brightness: device.brightness,
             mqttTopic: device.mqttTopic,
           });
         }

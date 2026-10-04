@@ -13,7 +13,9 @@ const axiosClient = axios.create({
 export const deviceApi = {
   getAll: () => axiosClient.get('/devices'),
   sendCommand: (id, action) => axiosClient.post(`/devices/${id}/command`, { action }),
+  setBrightness: (id, brightness) => axiosClient.post(`/devices/${id}/command`, { brightness }),
   create: (data) => axiosClient.post('/devices', data),
+  update: (id, data) => axiosClient.put(`/devices/${id}`, data),
   delete: (id) => axiosClient.delete(`/devices/${id}`),
 };
 
@@ -27,6 +29,14 @@ export const automationApi = {
   create: (data) => axiosClient.post('/automations', data),
   toggle: (id) => axiosClient.put(`/automations/${id}/toggle`),
   delete: (id) => axiosClient.delete(`/automations/${id}`),
+};
+
+export const scheduleApi = {
+  getAll: () => axiosClient.get('/schedules'),
+  create: (data) => axiosClient.post('/schedules', data),
+  update: (id, data) => axiosClient.put(`/schedules/${id}`, data),
+  toggle: (id) => axiosClient.put(`/schedules/${id}/toggle`),
+  delete: (id) => axiosClient.delete(`/schedules/${id}`),
 };
 
 export const logApi = {
