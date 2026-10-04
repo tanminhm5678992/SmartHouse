@@ -9,7 +9,11 @@ FROM node:20-alpine
 #   Error loading shared library libssl.so.1.1: No such file or directory
 # Cài openssl giúp Prisma nhận đúng binaryTarget "linux-musl-openssl-3.0.x".
 # ==========================================================
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl tzdata
+
+# Đặt múi giờ Việt Nam cho toàn bộ container (bộ lập lịch bật/tắt theo giờ dựa vào giờ local).
+# tzdata cung cấp /usr/share/zoneinfo để lệnh `date` và Node.js đều hiểu đúng TZ.
+ENV TZ=Asia/Ho_Chi_Minh
 
 WORKDIR /app
 

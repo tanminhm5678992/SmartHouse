@@ -67,6 +67,9 @@ services:
       - "4000:4000"
     environment:
       PORT: 4000
+      # BẮT BUỘC: đặt múi giờ Việt Nam. Thiếu biến này container chạy UTC (lệch 7 tiếng)
+      # → bộ lập lịch (scheduleService) so sánh giờ sai nên lịch hẹn KHÔNG BAO GIỜ chạy.
+      TZ: Asia/Ho_Chi_Minh
       DATABASE_URL: postgres://postgres:secretpassword@postgres:5432/smarthome?schema=public
       MQTT_BROKER_URL: mqtt://broker_server:1883
       CLIENT_URL: http://localhost:3000

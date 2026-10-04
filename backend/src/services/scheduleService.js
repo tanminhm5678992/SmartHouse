@@ -22,6 +22,14 @@ function currentIsoDay(now) {
   return d === 0 ? 7 : d;
 }
 
+// Ngày hôm trước theo chuẩn 1..7 (dùng cho lịch vắt qua nửa đêm, ví dụ BẬT 22:00 - TẮT 06:00)
+function previousIsoDay(now) {
+  const d = now.getDay();
+  if (d === 1) return 7; // Hôm nay Thứ 2 → hôm qua Chủ nhật
+  if (d === 0) return 6; // Hôm nay Chủ nhật → hôm qua Thứ 7
+  return d - 1;
+}
+
 // Kiểm tra hôm nay có nằm trong danh sách ngày áp dụng (CSV: "1,2,3") không
 function isDayAllowed(daysCsv, day) {
   if (!daysCsv || daysCsv.trim() === '') return true;
@@ -75,10 +83,16 @@ async function checkSchedules() {
     for (const schedule of schedules) {
       const device = schedule.targetDevice;
       if (!device) continue;
-      if (!isDayAllowed(schedule.days, day)) continue;
+
+      // Nếu giờ TẮT < giờ BẬT thì khoảng bật/tắt vắt qua nửa đêm (BẬT hôm nay, TẮT hôm sau).
+      // Khi đó ngày áp dụng để xét lượt TẮT phải là NGÀY HÔM QUA (ngày đã BẬT),
+      // nếu không lịch vắt qua nửa đêm sẽ không bao giờ tắt được thiết bị.
+      const overnight = schedule.offTime < schedule.onTime;
+      const onDayAllowed = isDayAllowed(schedule.days, day);
+      const offDayAllowed = isDayAllowed(schedule.days, overnight ? previousIsoDay(now) : day);
 
       // Đến giờ BẬT
-      if (schedule.onTime === hhmm && schedule.lastOnRun !== minuteKey) {
+      if (onDayAllowed && schedule.onTime === hhmm && schedule.lastOnRun !== minuteKey) {
         if (device.state !== 'ON') {
           await triggerAction(schedule, device, 'ON');
         }
@@ -89,7 +103,7 @@ async function checkSchedules() {
       }
 
       // Đến giờ TẮT
-      if (schedule.offTime === hhmm && schedule.lastOffRun !== minuteKey) {
+      if (offDayAllowed && schedule.offTime === hhmm && schedule.lastOffRun !== minuteKey) {
         if (device.state !== 'OFF') {
           await triggerAction(schedule, device, 'OFF');
         }
