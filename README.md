@@ -15,12 +15,12 @@ Hệ thống sử dụng **2 trạm ESP32-C3**:
 - **1x LED 2 (Chỉ báo WiFi/MQTT)**: Cực dương qua trở 220Ω kết nối **GPIO 7**, cực âm nối GND.
 
 ### 🛏️ Trạm Node 2: Phòng Ngủ (`firmware/node2_bed_room/`)
-- **1x Cảm biến DHT11**: Chân Data kết nối **GPIO 4**.
-- **1x Module Relay 2 (Máy lạnh / Quạt hút)**: Chân IN kết nối **GPIO 5**.
-- **1x LED 3 (Đèn ngủ)**: Cực dương qua trở 220Ω kết nối **GPIO 6**, cực âm nối GND.
-- **1x LED 4 (Chỉ báo WiFi/MQTT)**: Cực dương qua trở 220Ω kết nối **GPIO 7**, cực âm nối GND.
+- **Không có cảm biến DHT11** (Node 2 chỉ điều khiển thiết bị, không gửi telemetry nhiệt độ/độ ẩm).
+- **1x Module Relay 2 (Quạt mini 5V)**: Chân IN kết nối **GPIO 4**; `5V` → VCC và COM (jumper), `GND` → G, `NO` → dây (+) quạt, dây (-) quạt → GND.
+- **1x LED 3 (Đèn ngủ, chỉnh độ sáng PWM)**: Cực dương qua trở 220Ω kết nối **GPIO 5**, cực âm nối GND.
+- **LED mạng tích hợp**: **GPIO 8** (LED có sẵn trên board, báo trạng thái WiFi/MQTT).
 
-> ⚠️ **Lưu ý ESP32-C3**: Tuyệt đối không nối Relay vào **GPIO 2, 8, 9** vì đây là các chân Strapping Pin nạp bootloader.
+> ⚠️ **Lưu ý ESP32-C3**: Tuyệt đối không nối Relay vào **GPIO 2, 8, 9** vì đây là các chân Strapping Pin nạp bootloader. (Ở Node 2, GPIO 8 chỉ dùng cho LED tích hợp, không nối relay.)
 
 ---
 
@@ -65,10 +65,10 @@ docker compose down
 ## 4. Nạp Code Cho 2 ESP32-C3 (Arduino IDE)
 
 1. Mở **Arduino IDE** (đã có sẵn trên máy của bạn).
-2. Vào **Tools -> Manage Libraries** và cài đặt 3 thư viện:
-   - `PubSubClient` (Nick O'Leary)
-   - `DHT sensor library` (Adafruit)
-   - `ArduinoJson` (Benoit Blanchon)
+2. Vào **Tools -> Manage Libraries** và cài đặt các thư viện:
+   - `PubSubClient` (Nick O'Leary) — dùng cho cả 2 node
+   - `DHT sensor library` (Adafruit) — chỉ Node 1
+   - `ArduinoJson` (Benoit Blanchon) — chỉ Node 1 (Node 2 chỉ cần `PubSubClient`)
 3. Mở file [node1_living_room.ino](file:///d:/HocTap/IoT/BaoCao/smarthouse/firmware/node1_living_room/node1_living_room.ino) và sửa thông tin WiFi & IP Broker:
    ```cpp
    const char* WIFI_SSID     = "TÊN_WIFI_NHÀ_BẠN";

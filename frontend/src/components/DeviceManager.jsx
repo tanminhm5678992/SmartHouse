@@ -36,17 +36,16 @@ const NODE_INFO = {
     color: '#22d3ee',
     bg: 'rgba(6, 182, 212, 0.15)',
     border: 'rgba(6, 182, 212, 0.4)',
-    badge: 'KHÔNG TESTBOARD - CẮM TRỰC TIẾP',
+    badge: 'RELAY QUẠT + LED PWM (KHÔNG DHT11)',
     badgeStyle: { background: 'rgba(6, 182, 212, 0.2)', color: '#38bdf8' },
     pinDiagram: [
-      { pin: '5V',      desc: 'Nguồn 5V → Dây Đỏ Quạt Mini',      color: '#ef4444', used: true },
-      { pin: '3V3',     desc: 'Nguồn 3.3V → VCC DHT11',            color: '#f97316', used: true },
-      { pin: 'G',       desc: 'GND duy nhất → GND DHT11',          color: '#6b7280', used: true },
-      { pin: 'GPIO 4',  desc: 'DATA DHT11',                         color: '#34d399', used: true },
-      { pin: 'GPIO 5',  desc: 'Dây Đen Quạt Mini (kéo mass)',      color: '#22d3ee', used: true },
-      { pin: 'GPIO 6',  desc: '(+) Đèn LED ngủ',                   color: '#fbbf24', used: true },
-      { pin: 'GPIO 7',  desc: '(-) Đèn LED ngủ (GND ảo)',          color: '#a78bfa', used: true },
-      { pin: 'GPIO 0-3',desc: 'Chưa dùng',                         color: '#374151' },
+      { pin: '5V',      desc: 'VCC Relay + COM Relay (nối jumper VCC↔COM)', color: '#ef4444', used: true },
+      { pin: 'G',       desc: 'GND Relay, GND Quạt (-), chân ngắn (-) LED', color: '#6b7280', used: true },
+      { pin: 'GPIO 4',  desc: 'IN Relay (đóng/ngắt nguồn quạt, active-HIGH)', color: '#22d3ee', used: true },
+      { pin: 'GPIO 5',  desc: 'Điện trở 220Ω → chân dài (+) LED (PWM)',      color: '#fbbf24', used: true },
+      { pin: 'GPIO 8',  desc: 'LED mạng tích hợp (tự động)',                 color: '#a78bfa', used: true },
+      { pin: 'NO',      desc: 'NO Relay → Dây (+) Quạt',                     color: '#f59e0b', used: true },
+      { pin: 'GPIO 0-3',desc: 'Chưa dùng',                                   color: '#374151' },
     ],
   },
 };
@@ -83,28 +82,22 @@ const PRESETS = {
   },
   node2: {
     fan: {
-      pin: 'GPIO 5 & 5V',
+      pin: 'GPIO 4',
       name: 'Quạt Mini 5V Phòng Ngủ',
-      description: 'Dây Đỏ (+) cắm thẳng vào 5V | Dây Đen (-) cắm GPIO 5 (ESP32 kéo mass 0V → quạt chạy | HIGH → quạt dừng) | KHÔNG CẦN TESTBOARD',
+      description: 'GPIO 4 → IN Relay | 5V → VCC & COM Relay | G → GND Relay | NO Relay → Quạt (+) | Quạt (-) → GND',
       mqttTopic: 'home/device/relay2',
     },
     led: {
-      pin: 'GPIO 6 & GPIO 7',
-      name: 'Đèn LED ngủ 2 chân Phòng Ngủ',
-      description: 'Chân dài (+) cắm GPIO 6 | Chân ngắn (-) cắm GPIO 7 (đặt LOW làm GND ảo) | 2 chân liền nhau cắm thẳng vào 2 lỗ ESP32 | KHÔNG CẦN TESTBOARD',
+      pin: 'GPIO 5',
+      name: 'Đèn LED ngủ Phòng Ngủ',
+      description: 'GPIO 5 → điện trở 220Ω → chân dài (+) LED | Chân ngắn (-) LED → GND | Điều chỉnh độ sáng bằng PWM',
       mqttTopic: 'home/device/led3',
     },
     relay: {
-      pin: 'GPIO 5',
-      name: 'Relay 2 Phòng Ngủ',
-      description: 'Chân IN cắm GPIO 5 | DC+ cắm 5V | DC- cắm G',
-      mqttTopic: 'home/device/relay2',
-    },
-    sensor: {
       pin: 'GPIO 4',
-      name: 'DHT11 Phòng Ngủ',
-      description: 'Chân DATA cắm GPIO 4 | VCC cắm 3V3 | GND cắm G (chân G duy nhất của ESP32-C3 Super Mini)',
-      mqttTopic: 'home/sensor/node2/telemetry',
+      name: 'Relay 2 Phòng Ngủ',
+      description: 'GPIO 4 → IN Relay | 5V → VCC Relay (jumper VCC↔COM) | G → GND Relay',
+      mqttTopic: 'home/device/relay2',
     },
   },
 };
@@ -113,7 +106,7 @@ const GPIO_OPTIONS = [
   'GPIO 0', 'GPIO 1', 'GPIO 2', 'GPIO 3', 'GPIO 4',
   'GPIO 5', 'GPIO 6', 'GPIO 7', 'GPIO 8', 'GPIO 9',
   'GPIO 10', 'GPIO 20', 'GPIO 21',
-  'GPIO 5 & 5V', 'GPIO 6 & GPIO 7', '3V3', '5V', 'G',
+  '3V3', '5V', 'G',
 ];
 
 const DEVICE_TYPES = [

@@ -1,14 +1,33 @@
 import React from 'react';
-import { Thermometer, Droplets, Radio, Clock } from 'lucide-react';
+import { Thermometer, Droplets, Radio, Clock, AlertTriangle } from 'lucide-react';
+
+// Ngưỡng "Nóng" trùng với luật tự động hóa mẫu của dự án (nhiệt độ > 32°C)
+const HOT_THRESHOLD = 32;
+
+// ESP32 gửi telemetry mỗi 5 giây → quá 60 giây = dữ liệu đã cũ
+const STALE_MS = 60000;
+
+// Đổi mốc thời gian thành chuỗi tương đối
+function timeAgo(ts) {
+  if (!ts) return null;
+  const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (Number.isNaN(diff)) return null;
+  if (diff < 60) return `${Math.max(diff, 0)} giây trước`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+  return `${Math.floor(diff / 3600)} giờ trước`;
+}
 
 export default function SensorCard({ nodeId, title, room, data, status }) {
   const isOnline = status === 'online';
   const temp = data?.temperature !== undefined ? Number(data.temperature).toFixed(1) : '--';
   const hum = data?.humidity !== undefined ? Number(data.humidity).toFixed(1) : '--';
-  
-  const lastUpdated = data?.createdAt
-    ? new Date(data.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    : 'Chưa có dữ liệu';
+
+  // Dữ liệu cũ = trạm offline HOẶC bản tin cuối đã quá STALE_MS
+  const ageMs = data?.createdAt ? Date.now() - new Date(data.createdAt).getTime() : Infinity;
+  const isStale = ageMs > STALE_MS;
+
+  // Mức nhiệt theo ngưỡng thật của hệ thống
+  const comfort = temp === '--' ? null : Number(temp) >= HOT_THRESHOLD ? 'Nóng' : Number(temp) >= 28 ? 'Ấm' : 'Mát';
 
   // Chọn màu theo mức nhiệt độ
   const getTempColor = (t) => {
@@ -64,11 +83,30 @@ export default function SensorCard({ nodeId, title, room, data, status }) {
         </div>
       </div>
 
+      {isStale && (
+        <div className="sensor-stale-banner">
+          <AlertTriangle size={13} />
+          <span>
+            {isOnline
+              ? 'Dữ liệu cũ — trạm chưa gửi bản tin mới trong hơn 60 giây'
+              : 'Trạm đang OFFLINE — số liệu bên trên là dữ liệu cũ, KHÔNG phải realtime'}
+          </span>
+        </div>
+      )}
+
       <div className="sensor-card-footer">
         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Clock size={13} /> Cập nhật: {lastUpdated}
+          <Clock size={13} /> {data?.createdAt ? `Cập nhật ${timeAgo(data.createdAt)}` : 'Chưa có dữ liệu'}
         </span>
-        <span style={{ color: 'var(--text-dim)' }}>Topic: home/sensor/{nodeId}</span>
+        {comfort && (
+          <span className={`comfort-chip ${comfort === 'Nóng' ? 'hot' : comfort === 'Ấm' ? 'warm' : 'cool'}`}>
+            {comfort} · {comfort === 'Nóng' ? `≥ ${HOT_THRESHOLD}°C` : comfort === 'Ấm' ? '28–31.9°C' : '< 28°C'}
+          </span>
+        )}
+      </div>
+
+      <div className="sensor-topic-line">
+        <code>home/sensor/{nodeId}/telemetry</code> · LWT <code>home/sensor/{nodeId}/status</code> · DHT11 chân GPIO 4
       </div>
     </div>
   );

@@ -3,39 +3,34 @@
  * NODE 2: PHÒNG NGỦ (ESP32-C3 SUPER MINI)
  *
  * =================================================================================
- * SƠ ĐỒ ĐẤU DÂY NODE 2 — MỖI CHÂN ESP32 CHỈ CẮM ĐÚNG 1 LỖ DUY NHẤT
+ * SƠ ĐỒ ĐẤU DÂY NODE 2 (CẬP NHẬT: board → relay → quạt, LED có điện trở 220Ω)
  * =================================================================================
  *
- * ┌──────────────────────────────────────────────────────────────┐
- * │  LINH KIỆN          CHÂN LINH KIỆN   →   CHÂN ESP32-C3     │
- * ├──────────────────────────────────────────────────────────────┤
- * │  DHT11              VCC  (+)          →   3V3               │
- * │                     GND  (-)          →   GPIO 2  ← GND ẢO  │
- * │                     DATA (S)          →   GPIO 4            │
- * ├──────────────────────────────────────────────────────────────┤
- * │  MODULE RELAY       DC+               →   5V                │
- * │                     DC-               →   G   (GND thật)    │
- * │                     IN                →   GPIO 5  (kích)    │
- * │                     NO                →   G   (GND thật)    │
- * │  * DC- và NO đều cắm vào G  ← đây là 2 chân của RELAY,     │
- * │    không phải 2 chân của ESP32. Dây Relay DC- và NO         │
- * │    nối chung tại điểm G của ESP32 (chấp nhận được vì        │
- * │    cùng nguồn GND phần cứng, không phải chia chân GPIO)     │
- * ├──────────────────────────────────────────────────────────────┤
- * │  QUẠT MINI 5V       Dây Đỏ  (+)      →   5V                │
- * │                     Dây Đen (-)       →   COM relay         │
- * ├──────────────────────────────────────────────────────────────┤
- * │  ĐÈN LED            Chân dài  (+)    →   GPIO 6            │
- * │                     Chân ngắn (-)    →   GPIO 7  ← GND ẢO  │
- * │  * GPIO 6 và GPIO 7 NGAY CẠNH NHAU → cắm thẳng LED vào     │
- * ├──────────────────────────────────────────────────────────────┤
- * │  LED MẠNG           (tích hợp ESP32) →   GPIO 8  (tự động) │
- * └──────────────────────────────────────────────────────────────┘
+ * A. BOARD → RELAY → QUẠT
+ * ┌────┬──────────────────┬──────────────────┬─────────────────────────────────┐
+ * │ #  │ TỪ               │ ĐẾN              │ GHI CHÚ                         │
+ * ├────┼──────────────────┼──────────────────┼─────────────────────────────────┤
+ * │ 1  │ 5V  (board)      │ VCC  (relay)     │ Cấp nguồn cho relay             │
+ * │ 2  │ VCC (relay)      │ COM  (relay)     │ Dây jumper ngắn, đưa 5V sang COM│
+ * │ 3  │ G   (board)      │ GND  (relay)     │ Mass chung                      │
+ * │ 4  │ GND (relay)      │ Dây (-) của quạt │ Cắm chung hoặc xoắn lại         │
+ * │ 5  │ GPIO 4 (board)   │ IN   (relay)     │ Chân điều khiển relay           │
+ * │ 6  │ NO  (relay)      │ Dây (+) của quạt │ Relay đóng thì quạt có điện     │
+ * └────┴──────────────────┴──────────────────┴─────────────────────────────────┘
+ *   Dòng điện quạt: 5V → VCC → COM → (relay đóng) → NO → Quạt(+) → Quạt(-) → GND
  *
- * GIẢI THÍCH GND ẢO:
- *    GPIO 2 = OUTPUT LOW (0V) → làm GND cho DHT11 (~1mA, an toàn cho GPIO)
- *    GPIO 7 = OUTPUT LOW (0V) → làm GND cho chân (-) LED (~5mA, an toàn)
- *    Chân G (phần cứng)  → chỉ dùng cho Relay DC- và NO (dòng lớn hơn)
+ * B. ĐÈN LED (điện trở 220Ω nối tiếp)
+ * ┌──────────────────────────┬──────────────────┬──────────────────────────────┐
+ * │ TỪ                       │ ĐẾN              │ GHI CHÚ                      │
+ * ├──────────────────────────┼──────────────────┼──────────────────────────────┤
+ * │ GPIO 5 (board)           │ Điện trở 220Ω    │ Điện trở nối tiếp            │
+ * │ Đầu còn lại của điện trở │ Chân dài (+) LED │ Anode                        │
+ * │ Chân ngắn (-) của LED    │ GND              │ Chung GND với relay/quạt     │
+ * └──────────────────────────┴──────────────────┴──────────────────────────────┘
+ *
+ * C. LED MẠNG: LED tích hợp ESP32 → GPIO 8 (tự động)
+ * =================================================================================
+ * (Node 2 KHÔNG có cảm biến DHT11)
  * =================================================================================
  * LÝ DO DÙNG RELAY CHO QUẠT:
  *    GPIO chỉ chịu ~40mA — quạt mini cần 100-500mA → relay là bắt buộc
@@ -44,8 +39,6 @@
 
 #include <WiFi.h>
 #include <PubSubClient.h>
-#include <DHT.h>
-#include <ArduinoJson.h>
 #include <esp_arduino_version.h>
 
 // ========== CẤU HÌNH THÔNG TIN MẠNG WIFI & MQTT BROKER ==========
@@ -55,16 +48,16 @@ const char* MQTT_BROKER   = "192.168.1.100";   // IP máy tính chạy Docker
 const int   MQTT_PORT     = 1883;
 const char* CLIENT_ID     = "ESP32C3_Node2_BedRoom";
 
-// ========== CẤU HÌNH CHÂN GPIO (MỖI CHÂN 1 LỖ DUY NHẤT) ==========
-#define PIN_DHT_VCC     1   // GPIO 1: VCC ảo cho DHT11 — xuất 3.3V (~1mA, an toàn cho GPIO)
-#define PIN_DHT_GND     2   // GPIO 2: GND ảo cho DHT11 — xuất 0V  (~1mA, an toàn cho GPIO)
-#define PIN_DHT11       4   // GPIO 4: Chân DATA cảm biến DHT11
-#define PIN_RELAY_FAN   5   // GPIO 5: Chân IN Module Relay → kích quạt (Active LOW)
-#define PIN_LED_ANODE   6   // GPIO 6: Chân dài (+) Đèn LED
-#define PIN_LED_CATHODE 7   // GPIO 7: GND ảo cho (-) Đèn LED — xuất 0V (~5mA, an toàn)
+// ========== CẤU HÌNH CHÂN GPIO ==========
+#define PIN_RELAY_FAN   4   // GPIO 4: Chân IN Module Relay → đóng/ngắt nguồn quạt (COM-NO)
+#define PIN_LED_ANODE   5   // GPIO 5: → điện trở 220Ω → chân dài (+) LED (cathode nối GND)
 #define PIN_ONBOARD_LED 8   // GPIO 8: LED xanh tích hợp ESP32 (báo mạng)
 
-#define DHTTYPE DHT11
+// Loại module relay: true  = relay đóng khi chân IN = LOW (phổ biến, như Node 1)
+//                    false = relay đóng khi chân IN = HIGH
+// Module relay của Node 2 đóng khi IN = HIGH (đã thử thực tế: để true thì BẬT/TẮT bị đảo ngược)
+// → Nếu sau này đổi sang module khác mà bị ngược lại, chỉ cần đổi giá trị này.
+#define RELAY_ACTIVE_LOW false
 
 // ========== CẤU HÌNH PWM (ĐỘ SÁNG) CHO ĐÈN LED ==========
 #define LED3_PWM_CHANNEL 0      // Kênh LEDC dùng cho core < 3.0 (core >= 3.0 gán tự động theo chân)
@@ -73,53 +66,50 @@ const char* CLIENT_ID     = "ESP32C3_Node2_BedRoom";
 
 // ========== DANH SÁCH MQTT TOPICS ==========
 const char* TOPIC_STATUS    = "home/sensor/node2/status";
-const char* TOPIC_TELEMETRY = "home/sensor/node2/telemetry";
 const char* TOPIC_FAN_CMD   = "home/device/relay2/command";
 const char* TOPIC_FAN_STATE = "home/device/relay2/state";
 const char* TOPIC_LED_CMD   = "home/device/led3/command";
 const char* TOPIC_LED_STATE = "home/device/led3/state";
 
 // ========== KHỞI TẠO ĐỐI TƯỢNG VÀ BIẾN TOÀN CỤC ==========
-DHT dht(PIN_DHT11, DHTTYPE);
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
 bool fanState = false;
 bool ledState = false;
 
-float lastValidTemp = 28.5;
-float lastValidHum  = 65.0;
-
-unsigned long lastSensorReadTime   = 0;
 unsigned long lastReconnectAttempt = 0;
 unsigned long lastWifiRetry        = 0;
 unsigned long lastHeartbeatTime    = 0;
 bool          wifiConnecting       = false;
 
-const unsigned long SENSOR_INTERVAL     = 5000;
 const unsigned long HEARTBEAT_INTERVAL  = 10000;
 const unsigned long WIFI_RETRY_INTERVAL = 5000;
 
 // ----------------------------------------------------------------
 // HÀM ĐIỀU KHIỂN QUẠT MINI QUA MODULE RELAY
-// GPIO5 → Chân IN của Relay (Relay Active LOW)
+// GPIO4 → IN của Relay | 5V → COM → NO → Quạt(+) | Quạt(-) → GND
 // ----------------------------------------------------------------
+void relayWrite(bool on) {
+  // on = true  → relay ĐÓNG (COM-NO thông) → quạt có điện
+  // on = false → relay HỞ                  → quạt mất điện
+  if (RELAY_ACTIVE_LOW) digitalWrite(PIN_RELAY_FAN, on ? LOW : HIGH);
+  else                  digitalWrite(PIN_RELAY_FAN, on ? HIGH : LOW);
+}
+
 void setFan(bool state) {
   fanState = state;
-  // Relay tích cực mức THẤP (Active LOW):
-  //   IN = LOW  (0V)   → Relay ĐÓNG → mạch COM-NO kín → Quạt CHẠY
-  //   IN = HIGH (3.3V) → Relay HỞ   → mạch hở          → Quạt DỪNG
-  digitalWrite(PIN_RELAY_FAN, state ? LOW : HIGH);
+  relayWrite(state);
   mqttClient.publish(TOPIC_FAN_STATE, state ? "ON" : "OFF", true);
-  Serial.printf("[Quạt/Relay] %s (GPIO5=%s → Relay %s)\n",
+  Serial.printf("[Quạt/Relay] %s (GPIO%d → Relay %s)\n",
                 state ? "ON (BẬT)" : "OFF (TẮT)",
-                state ? "LOW" : "HIGH",
+                PIN_RELAY_FAN,
                 state ? "ĐÓNG" : "HỞ");
 }
 
 // ----------------------------------------------------------------
-// HÀM ĐIỀU KHIỂN ĐÈN LED (2 CHÂN)
-// Chân dài (+) cắm lỗ GPIO 6, Chân ngắn (-) cắm lỗ GPIO 7
+// HÀM ĐIỀU KHIỂN ĐÈN LED
+// GPIO 5 → điện trở 220Ω → chân dài (+); chân ngắn (-) → GND
 // ----------------------------------------------------------------
 // Chuyển đổi phần trăm độ sáng (0-100%) sang giá trị duty (0-255)
 int percentToDuty(int percent) {
@@ -295,43 +285,26 @@ void setup() {
   pinMode(PIN_ONBOARD_LED, OUTPUT);
   digitalWrite(PIN_ONBOARD_LED, HIGH);
 
-  // 2. VCC ảo + GND ảo cho DHT11 (mỗi chân 1 dây duy nhất)
-  //    GPIO 1 = OUTPUT HIGH (3.3V) → VCC ảo cho DHT11 (~1mA, an toàn)
-  //    GPIO 2 = OUTPUT LOW  (0V)   → GND ảo cho DHT11 (~1mA, an toàn)
-  //    → Chân 3V3 phần cứng chỉ còn 1 dây duy nhất (Relay DC+)
-  pinMode(PIN_DHT_VCC, OUTPUT);
-  digitalWrite(PIN_DHT_VCC, HIGH);    // Luôn giữ 3.3V làm VCC ảo
-  pinMode(PIN_DHT_GND, OUTPUT);
-  digitalWrite(PIN_DHT_GND, LOW);     // Luôn giữ 0V làm GND ảo
-
-  // 3. Module Relay điều khiển Quạt (GPIO 5, Active LOW)
-  //    pinMode TRƯỚC → digitalWrite sau (tránh xung LOW ngắn khi reset)
+  // 2. Module Relay điều khiển Quạt (GPIO 4)
+  //    Đặt mức TẮT ngay khi khởi động (tránh quạt chạy thoáng qua khi reset)
   pinMode(PIN_RELAY_FAN, OUTPUT);
-  digitalWrite(PIN_RELAY_FAN, HIGH);  // HIGH = Relay HỞ = quạt tắt
+  relayWrite(false);
 
-  // 4. Đèn LED 2 chân
-  //    GPIO 7 = GND ảo (OUTPUT LOW) cho chân ngắn (-) của LED
-  //    GPIO 6 = điều khiển bật/tắt cho chân dài (+) của LED
-  pinMode(PIN_LED_CATHODE, OUTPUT);
-  digitalWrite(PIN_LED_CATHODE, LOW);  // GND ảo 0V cố định
-  pwmAttachLed(PIN_LED_ANODE, LED3_PWM_CHANNEL);     // Gắn PWM cho đèn LED (điều khiển độ sáng)
+  // 3. Đèn LED (GPIO 5 → 220Ω → LED → GND), điều khiển độ sáng bằng PWM
+  pwmAttachLed(PIN_LED_ANODE, LED3_PWM_CHANNEL);
   pwmWriteLed(PIN_LED_ANODE, LED3_PWM_CHANNEL, 0);   // LED tắt (duty = 0)
 
-  // 5. Trạng thái logic ban đầu
+  // 4. Trạng thái logic ban đầu
   fanState = false;
   ledState = false;
 
-  // 6. Cảm biến DHT11 (không cần pull-up ngoài, dùng pull-up nội bộ)
-  pinMode(PIN_DHT11, INPUT_PULLUP);
-  dht.begin();
-
-  // 6. Đăng ký sự kiện WiFi
+  // 5. Đăng ký sự kiện WiFi
   WiFi.onEvent(onWifiEvent);
 
-  // 7. Kết nối WiFi lần đầu (blocking tối đa 15 giây)
+  // 6. Kết nối WiFi lần đầu (blocking tối đa 15 giây)
   setupWiFi();
 
-  // 8. Cấu hình MQTT
+  // 7. Cấu hình MQTT
   espClient.setNoDelay(true);
   mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
   mqttClient.setCallback(mqttCallback);
@@ -339,7 +312,7 @@ void setup() {
   mqttClient.setKeepAlive(60);
 
   Serial.println("[System] Khởi động hoàn tất!");
-  Serial.println("[Relay] GPIO5=HIGH → Relay HỞ → Quạt TẮT (trạng thái ban đầu an toàn)");
+  Serial.printf("[Relay] GPIO%d → Relay HỞ → Quạt TẮT (trạng thái ban đầu an toàn)\n", PIN_RELAY_FAN);
 }
 
 // ----------------------------------------------------------------
@@ -361,29 +334,7 @@ void loop() {
 
   unsigned long now = millis();
 
-  // 3. Đọc và gửi dữ liệu cảm biến DHT11 mỗi 5 giây
-  if (now - lastSensorReadTime >= SENSOR_INTERVAL) {
-    lastSensorReadTime = now;
-    float humidity    = dht.readHumidity();
-    float temperature = dht.readTemperature();
-    if (!isnan(humidity) && !isnan(temperature)) {
-      lastValidTemp = temperature;
-      lastValidHum  = humidity;
-      Serial.printf("[DHT11] %.1f°C | %.1f%%\n", temperature, humidity);
-    } else {
-      Serial.println("[DHT11] Đọc lỗi — dùng giá trị đệm.");
-    }
-    if (mqttClient.connected()) {
-      StaticJsonDocument<128> doc;
-      doc["temp"] = round(lastValidTemp * 10) / 10.0;
-      doc["hum"]  = round(lastValidHum  * 10) / 10.0;
-      char buffer[128];
-      serializeJson(doc, buffer);
-      mqttClient.publish(TOPIC_TELEMETRY, buffer, true);
-    }
-  }
-
-  // 4. Heartbeat MQTT mỗi 10 giây
+  // 3. Heartbeat MQTT mỗi 10 giây
   if (now - lastHeartbeatTime >= HEARTBEAT_INTERVAL) {
     lastHeartbeatTime = now;
     if (mqttClient.connected()) {

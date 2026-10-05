@@ -4,13 +4,18 @@ import { automationApi } from '../api/axiosClient';
 
 export default function AutomationBuilder({ automations, devices, onReload }) {
   const [showModal, setShowModal] = useState(false);
+
+  // Chỉ thiết bị CHẤP HÀNH mới nhận được lệnh ON/OFF — cảm biến DHT11 không điều khiển được.
+  // (Trước đây danh sách trộn cả cảm biến nên có thể tạo ra luật bất khả thi.)
+  const actuators = devices.filter((d) => d.type !== 'sensor');
+
   const [formData, setFormData] = useState({
     name: '',
     sensorNode: 'node1',
     metric: 'temperature',
     operator: '>',
     threshold: 30,
-    targetDeviceId: devices[0]?.id || '',
+    targetDeviceId: actuators[0]?.id || '',
     action: 'ON',
   });
 
@@ -44,7 +49,7 @@ export default function AutomationBuilder({ automations, devices, onReload }) {
         metric: 'temperature',
         operator: '>',
         threshold: 30,
-        targetDeviceId: devices[0]?.id || '',
+        targetDeviceId: actuators[0]?.id || '',
         action: 'ON',
       });
       onReload();
@@ -202,9 +207,9 @@ export default function AutomationBuilder({ automations, devices, onReload }) {
                     value={formData.targetDeviceId}
                     onChange={(e) => setFormData({ ...formData, targetDeviceId: e.target.value })}
                   >
-                    {devices.map((d) => (
+                    {actuators.map((d) => (
                       <option key={d.id} value={d.id}>
-                        {d.name} ({d.nodeId.toUpperCase()})
+                        {d.name} — {d.nodeId === 'node1' ? 'ESP32 #1 (Phòng Khách)' : d.nodeId === 'node2' ? 'ESP32 #2 (Phòng Ngủ)' : d.nodeId} [{d.type.toUpperCase()}]
                       </option>
                     ))}
                   </select>

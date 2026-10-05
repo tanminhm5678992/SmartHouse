@@ -46,6 +46,10 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
+// Mô tả đấu dây Node 2 (khớp firmware/node2_bed_room/node2_bed_room.ino)
+const NODE2_FAN_DESC = 'GPIO 4 → IN Relay | 5V → VCC & COM Relay | G → GND Relay | NO Relay → Quạt (+) | Quạt (-) → GND';
+const NODE2_LED_DESC = 'GPIO 5 → điện trở 220Ω → chân dài (+) LED | Chân ngắn (-) LED → GND';
+
 // Hàm khởi tạo dữ liệu mẫu nếu database trống
 async function seedInitialData() {
   try {
@@ -59,9 +63,8 @@ async function seedInitialData() {
         { name: 'LED 1: Đèn bàn làm việc', type: 'led', mqttTopic: 'home/device/led1', nodeId: 'node1', pin: 'GPIO 6', description: 'Chân (+) cắm GPIO 6, chân (-) cắm GPIO 3 (0V)', state: 'OFF' },
         { name: 'LED 2: Đèn trang trí tủ kính', type: 'led', mqttTopic: 'home/device/led2', nodeId: 'node1', pin: 'GPIO 7', description: 'Đèn LED chỉ báo mạng cắm GPIO 7', state: 'OFF' },
         // Node 2 - Phòng Ngủ (ESP32 #2)
-        { name: 'Quạt mini 5V Phòng Ngủ (Relay 2)', type: 'fan', mqttTopic: 'home/device/relay2', nodeId: 'node2', pin: 'GPIO 5', description: 'Dây (+) cắm 5V, Dây (-) cắm GPIO 5 (điều khiển mass)', state: 'OFF' },
-        { name: 'LED 3: Đèn ngủ 2 chân', type: 'led', mqttTopic: 'home/device/led3', nodeId: 'node2', pin: 'GPIO 6', description: 'Chân (+) cắm GPIO 6, chân (-) cắm GPIO 7 (0V)', state: 'OFF' },
-        { name: 'LED 4: Đèn ban công', type: 'led', mqttTopic: 'home/device/led4', nodeId: 'node2', pin: 'GPIO 7', description: 'Đèn trang trí phụ', state: 'OFF' },
+        { name: 'Quạt mini 5V Phòng Ngủ (Relay 2)', type: 'fan', mqttTopic: 'home/device/relay2', nodeId: 'node2', pin: 'GPIO 4', description: NODE2_FAN_DESC, state: 'OFF' },
+        { name: 'LED 3: Đèn ngủ', type: 'led', mqttTopic: 'home/device/led3', nodeId: 'node2', pin: 'GPIO 5', description: NODE2_LED_DESC, state: 'OFF' },
       ];
 
       for (const d of devices) {
@@ -85,16 +88,15 @@ async function seedInitialData() {
         });
       }
 
-      console.log('[Seed] Đã khởi tạo thành công 6 thiết bị (2 relay, 4 LED) và 1 luật tự động!');
+      console.log('[Seed] Đã khởi tạo thành công 5 thiết bị (Relay 1, LED 1, LED 2, Quạt Node 2, LED 3) và 1 luật tự động!');
     } else {
       // Cập nhật thông tin chân cắm cho các thiết bị cũ nếu chưa có
       const defaultPins = [
         { topic: 'home/device/relay1', pin: 'GPIO 5', desc: 'Chân IN cắm GPIO 5 (Nguồn 5V, DC- cắm G)' },
         { topic: 'home/device/led1', pin: 'GPIO 6', desc: 'Chân (+) cắm GPIO 6, chân (-) cắm GPIO 3 (0V)' },
         { topic: 'home/device/led2', pin: 'GPIO 7', desc: 'Đèn LED chỉ báo mạng cắm GPIO 7' },
-        { topic: 'home/device/relay2', pin: 'GPIO 5', desc: 'Dây (+) cắm 5V, Dây (-) cắm GPIO 5 (điều khiển mass)' },
-        { topic: 'home/device/led3', pin: 'GPIO 6', desc: 'Chân (+) cắm GPIO 6, chân (-) cắm GPIO 7 (0V)' },
-        { topic: 'home/device/led4', pin: 'GPIO 7', desc: 'Đèn trang trí phụ' },
+        { topic: 'home/device/relay2', pin: 'GPIO 4', desc: NODE2_FAN_DESC },
+        { topic: 'home/device/led3', pin: 'GPIO 5', desc: NODE2_LED_DESC },
       ];
       for (const p of defaultPins) {
         await prisma.device.updateMany({
@@ -102,6 +104,17 @@ async function seedInitialData() {
           data: { pin: p.pin, description: p.desc },
         });
       }
+
+      // Đồng bộ chân cắm Node 2 theo firmware mới (relay quạt GPIO 4, LED PWM GPIO 5)
+      // Chỉ cập nhật các bản ghi còn mang chân cắm mặc định cũ, không ghi đè chân do người dùng tự sửa
+      await prisma.device.updateMany({
+        where: { mqttTopic: 'home/device/relay2', nodeId: 'node2', pin: { in: ['GPIO 5', 'GPIO 5 & 5V'] } },
+        data: { pin: 'GPIO 4', description: NODE2_FAN_DESC },
+      });
+      await prisma.device.updateMany({
+        where: { mqttTopic: 'home/device/led3', nodeId: 'node2', pin: { in: ['GPIO 6', 'GPIO 6 & GPIO 7'] } },
+        data: { pin: 'GPIO 5', description: NODE2_LED_DESC },
+      });
     }
 
     // Khởi tạo 1 lịch hẹn bật/tắt mẫu nếu chưa có lịch nào

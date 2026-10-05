@@ -1,10 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Lightbulb, Zap, Fan, Sun } from 'lucide-react';
+import { Lightbulb, Zap, Fan, Sun, Gauge, MapPin, Clock, WifiOff } from 'lucide-react';
 
-export default function DeviceCard({ device, onToggle, onBrightness }) {
+// Nhãn phòng theo đúng 2 trạm của dự án
+const ROOM = { node1: 'Phòng Khách', node2: 'Phòng Ngủ' };
+
+// Đổi mốc thời gian thành chuỗi tương đối (thời điểm thiết bị phản hồi lần cuối)
+function timeAgo(ts) {
+  if (!ts) return null;
+  const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (Number.isNaN(diff)) return null;
+  if (diff < 60) return `${Math.max(diff, 0)} giây trước`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+  return `${Math.floor(diff / 86400)} ngày trước`;
+}
+
+export default function DeviceCard({ device, onToggle, onBrightness, nodeStatus }) {
   const [loading, setLoading] = useState(false);
   const isOn = device.state === 'ON';
   const isLed = device.type === 'led';
+  const isSensor = device.type === 'sensor';
+  // Trạng thái trạm ESP32 chứa thiết bị này (lấy từ node_status qua MQTT LWT)
+  const nodeOnline = nodeStatus !== 'offline';
 
   // Độ sáng cục bộ (0-100). Khởi tạo từ server hoặc theo trạng thái bật/tắt
   const [brightness, setBrightness] = useState(
@@ -42,15 +59,16 @@ export default function DeviceCard({ device, onToggle, onBrightness }) {
     }, 250);
   };
 
-  // Chọn icon dựa theo loại thiết bị
+  // Icon theo ĐÚNG loại thiết bị khai báo trong DB.
+  // (Bản cũ: type 'fan' bị rơi vào nhánh mặc định nên hiện nhầm icon bóng đèn)
   const renderIcon = () => {
-    if (device.type === 'relay') {
-      if (device.name.toLowerCase().includes('quạt')) {
-        return <Fan size={22} className={isOn ? 'spin-icon' : ''} />;
-      }
-      return <Zap size={22} />;
+    switch (device.type) {
+      case 'relay':  return <Zap size={22} />;
+      case 'fan':    return <Fan size={22} className={isOn ? 'spin-icon' : ''} />;
+      case 'sensor': return <Gauge size={22} />;
+      case 'led':
+      default:       return <Lightbulb size={22} />;
     }
-    return <Lightbulb size={22} />;
   };
 
   // Độ sáng hiệu dụng để tạo hiệu ứng phát sáng cho icon LED
@@ -66,24 +84,36 @@ export default function DeviceCard({ device, onToggle, onBrightness }) {
         >
           {renderIcon()}
         </div>
-        <label className="switch-control">
-          <input
-            type="checkbox"
-            checked={isOn}
-            disabled={loading}
-            onChange={handleToggle}
-          />
-          <span className="switch-slider"></span>
-        </label>
+        {isSensor ? (
+          <span className="sensor-readonly-badge">Chỉ đọc</span>
+        ) : (
+          <label className="switch-control">
+            <input
+              type="checkbox"
+              checked={isOn}
+              disabled={loading}
+              onChange={handleToggle}
+            />
+            <span className="switch-slider"></span>
+          </label>
+        )}
       </div>
 
       <div className="device-details">
         <h4>{device.name}</h4>
         <div className="device-meta">
-          <span>{device.nodeId.toUpperCase()}</span>
+          <span className={`mini-dot ${nodeOnline ? 'online' : 'offline'}`} />
+          <span>{device.nodeId === 'node1' ? 'ESP32 #1' : device.nodeId === 'node2' ? 'ESP32 #2' : device.nodeId.toUpperCase()}</span>
           <span>•</span>
-          <span>{device.type.toUpperCase()}</span>
+          <span>{ROOM[device.nodeId] || device.nodeId}</span>
+          <span>•</span>
+          <span>{(device.type || '').toUpperCase()}</span>
         </div>
+        {device.pin && (
+          <div className="device-pin-chip" title={device.description || ''}>
+            <MapPin size={12} /> {device.pin}
+          </div>
+        )}
       </div>
 
       {/* Thanh chỉnh độ sáng: chỉ hiển thị cho đèn LED */}
@@ -110,13 +140,28 @@ export default function DeviceCard({ device, onToggle, onBrightness }) {
         </div>
       )}
 
+      {!nodeOnline && !isSensor && (
+        <div className="device-offline-warn">
+          <WifiOff size={13} />
+          <span>
+            Trạm <b>{device.nodeId.toUpperCase()}</b> đang OFFLINE — lệnh được ghi vào CSDL
+            nhưng chưa chắc tới mạch.
+          </span>
+        </div>
+      )}
+
       <div className="device-card-footer">
         <span className="device-status-text">
-          {isOn ? 'ĐANG BẬT' : 'ĐANG TẮT'}
+          {isSensor ? 'CẢM BIẾN' : isOn ? 'ĐANG BẬT' : 'ĐANG TẮT'}
         </span>
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-          {device.mqttTopic}
+        <span className="device-lastseen">
+          <Clock size={11} />
+          {device.lastSeen ? timeAgo(device.lastSeen) : 'chưa có phản hồi'}
         </span>
+      </div>
+
+      <div className="device-topic-line">
+        Lệnh MQTT: <code>{device.mqttTopic}/command</code>
       </div>
     </div>
   );

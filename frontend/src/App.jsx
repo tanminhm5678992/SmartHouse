@@ -8,6 +8,7 @@ import AutomationBuilder from './components/AutomationBuilder';
 import ActivityLogView from './components/ActivityLogView';
 import DeviceManager from './components/DeviceManager';
 import ScheduleManager from './components/ScheduleManager';
+import SystemStatus from './components/SystemStatus';
 
 import { deviceApi, sensorApi, automationApi, scheduleApi, logApi } from './api/axiosClient';
 import { useSocket } from './hooks/useSocket';
@@ -131,7 +132,21 @@ export default function App() {
         sensorData={sensorData}
         devices={devices}
         nodeStatuses={nodeStatuses}
+        automations={automations}
+        schedules={schedules}
       />
+
+      {/* Kiến trúc 5 tầng & tình trạng kết nối thật của hệ thống */}
+      {activeTab === 'dashboard' && (
+        <SystemStatus
+          nodeStatuses={nodeStatuses}
+          sensorData={sensorData}
+          devices={devices}
+          isSocketConnected={isSocketConnected}
+          automations={automations}
+          schedules={schedules}
+        />
+      )}
 
       {/* Nội dung tương ứng theo Tab */}
       {activeTab === 'dashboard' && (
@@ -169,8 +184,11 @@ export default function App() {
             <div className="section-header">
               <div className="section-title">
                 <Zap size={20} color="var(--primary)" />
-                <span>Thiết Bị Chấp Hành (Actuators)</span>
-                <span className="tag">Điều Khiển Thực Tế</span>
+                <span>Thiết Bị Chấp Hành &amp; Cảm Biến Đã Đăng Ký</span>
+                <span className="tag">
+                  {devices.filter((d) => d.type !== 'sensor').length} chấp hành ·{' '}
+                  {devices.filter((d) => d.type === 'sensor').length} cảm biến
+                </span>
               </div>
               <button
                 className="btn-primary"
@@ -182,14 +200,17 @@ export default function App() {
             </div>
 
             <div className="devices-grid">
-              {devices.map((device) => (
-                <DeviceCard
-                  key={device.id}
-                  device={device}
-                  onToggle={handleToggleDevice}
-                  onBrightness={handleBrightnessChange}
-                />
-              ))}
+              {[...devices]
+                .sort((a, b) => (a.type === 'sensor' ? 1 : 0) - (b.type === 'sensor' ? 1 : 0))
+                .map((device) => (
+                  <DeviceCard
+                    key={device.id}
+                    device={device}
+                    nodeStatus={nodeStatuses[device.nodeId]}
+                    onToggle={handleToggleDevice}
+                    onBrightness={handleBrightnessChange}
+                  />
+                ))}
             </div>
           </section>
 

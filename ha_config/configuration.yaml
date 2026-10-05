@@ -24,20 +24,7 @@ mqtt:
       device_class: humidity
       state_class: measurement
 
-    # Cảm biến Node 2 - Phòng ngủ
-    - name: "Nhiệt độ phòng ngủ"
-      state_topic: "home/sensor/node2/telemetry"
-      value_template: "{{ value_json.temp }}"
-      unit_of_measurement: "°C"
-      device_class: temperature
-      state_class: measurement
-
-    - name: "Độ ẩm phòng ngủ"
-      state_topic: "home/sensor/node2/telemetry"
-      value_template: "{{ value_json.hum }}"
-      unit_of_measurement: "%"
-      device_class: humidity
-      state_class: measurement
+    # Node 2 - Phòng ngủ: KHÔNG có cảm biến DHT11 (chỉ điều khiển relay quạt + LED)
 
   binary_sensor:
     - name: "Trạng thái Node 1"
@@ -63,7 +50,7 @@ mqtt:
       state_on: "ON"
       state_off: "OFF"
 
-    # Relay 2 - Phòng ngủ
+    # Relay 2 - Phòng ngủ (quạt mini 5V qua relay, GPIO 4)
     - name: "Relay 2 Phòng Ngủ"
       unique_id: "relay_2_pn"
       state_topic: "home/device/relay2/state"
