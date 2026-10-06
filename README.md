@@ -127,3 +127,33 @@ cd backend
 npx prisma db push
 ```
 
+### 6.4. Đăng Nhập Hệ Thống (JWT) & Quản Lý Người Dùng
+- Người dùng **bắt buộc đăng nhập** trước khi truy cập Dashboard; API và kênh Socket.IO đều yêu cầu JWT hợp lệ.
+- **Tài khoản mặc định:** `admin` / `admin` (được tự động tạo khi khởi động backend, mật khẩu lưu dạng băm bcrypt trong bảng `users` của PostgreSQL; hệ thống tự migrate mật khẩu mặc định cũ `123` → `admin`).
+- **Quyền truy cập (role):**
+
+  | Role | Nhãn hiển thị | Quyền |
+  | :--- | :--- | :--- |
+  | `admin` | Quản trị viên | Xem **tất cả** các trang, bao gồm trang **Quản Lý Người Dùng** |
+  | `manager` | Quản lý | Đăng nhập vào hệ thống bình thường, **không** thấy trang quản lý người dùng |
+  | `user` | Người dùng | Đăng nhập vào hệ thống bình thường, **không** thấy trang quản lý người dùng |
+
+- Luồng hoạt động:
+  1. Frontend gọi `POST /api/auth/login` → backend đối chiếu mật khẩu với CSDL → trả về `token` JWT (hết hạn sau `JWT_EXPIRES_IN`, mặc định 1 ngày).
+  2. Token được lưu trong `localStorage` và tự động gắn vào header `Authorization: Bearer <token>` cho mọi request (axios interceptor).
+  3. Khi token hết hạn (HTTP 401), hệ thống tự đăng xuất và quay về trang đăng nhập.
+  4. Socket.IO gửi token qua `socket.handshake.auth.token`; client không hợp lệ sẽ bị từ chối kết nối.
+- **Quản lý người dùng (chỉ `admin`):** tab *Quản Lý Người Dùng* chỉ hiển thị cho admin; server bảo vệ bằng middleware `requireAdmin` (đọc role mới nhất từ DB, trả `403` nếu không phải admin). Admin có thể: thêm người dùng mới, đổi quyền giữa `user` ↔ `manager`, đặt lại mật khẩu, xóa tài khoản. Admin **không thể** tự hạ quyền/xóa chính mình (tránh mất quyền quản trị).
+- Các biến cấu hình: `JWT_SECRET` và `JWT_EXPIRES_IN` (đã khai báo trong `backend/.env` và `docker-compose.yml` — **nên đổi `JWT_SECRET` khi triển khai thật**).
+- API liên quan:
+
+  | Method | Endpoint | Mô tả | Quyền |
+  | :--- | :--- | :--- | :--- |
+  | `POST` | `/api/auth/login` | Đăng nhập, nhận `{ token, user }` | Công khai |
+  | `GET` | `/api/auth/me` | Kiểm tra token, lấy thông tin user hiện tại | Đã đăng nhập |
+  | `GET` | `/api/users` | Danh sách người dùng | `admin` |
+  | `POST` | `/api/users` | Thêm người dùng mới `{ username, password, role }` | `admin` |
+  | `PUT` | `/api/users/:id` | Đổi quyền `{ role }` và/hoặc đặt lại mật khẩu `{ password }` | `admin` |
+  | `DELETE` | `/api/users/:id` | Xóa người dùng (không xóa được chính mình) | `admin` |
+
+

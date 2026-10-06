@@ -4,11 +4,16 @@ const express = require('express');
 const cors = require('cors');
 const { Server } = require('socket.io');
 
+const bcrypt = require('bcryptjs');
+
 const prisma = require('./config/prisma');
+const { authenticate, socketAuthenticate } = require('./middleware/auth');
 const { initSocket } = require('./sockets/socketHandler');
 const { connectMQTT } = require('./mqtt/mqttClient');
 const { startScheduler } = require('./services/scheduleService');
 
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 const deviceRoutes = require('./routes/deviceRoutes');
 const sensorRoutes = require('./routes/sensorRoutes');
 const automationRoutes = require('./routes/automationRoutes');
@@ -23,6 +28,7 @@ const allowedOrigins = [process.env.CLIENT_URL || 'http://localhost:3000', 'http
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 
@@ -33,14 +39,18 @@ const io = new Server(server, {
     methods: ['GET', 'POST'],
   },
 });
+// Chỉ cho phép client đã đăng nhập (có JWT hợp lệ) kết nối realtime
+io.use(socketAuthenticate);
 initSocket(io);
 
 // API Routes
-app.use('/api/devices', deviceRoutes);
-app.use('/api/sensors', sensorRoutes);
-app.use('/api/automations', automationRoutes);
-app.use('/api/schedules', scheduleRoutes);
-app.use('/api/logs', logRoutes);
+app.use('/api/auth', authRoutes); // Đăng nhập (công khai)
+app.use('/api/users', authenticate, userRoutes); // Quản lý người dùng (chỉ admin, kiểm tra trong router)
+app.use('/api/devices', authenticate, deviceRoutes);
+app.use('/api/sensors', authenticate, sensorRoutes);
+app.use('/api/automations', authenticate, automationRoutes);
+app.use('/api/schedules', authenticate, scheduleRoutes);
+app.use('/api/logs', authenticate, logRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
@@ -49,6 +59,42 @@ app.get('/api/health', (req, res) => {
 // Mô tả đấu dây Node 2 (khớp firmware/node2_bed_room/node2_bed_room.ino)
 const NODE2_FAN_DESC = 'GPIO 4 → IN Relay | 5V → VCC & COM Relay | G → GND Relay | NO Relay → Quạt (+) | Quạt (-) → GND';
 const NODE2_LED_DESC = 'GPIO 5 → điện trở 220Ω → chân dài (+) LED | Chân ngắn (-) LED → GND';
+
+// Tạo tài khoản mặc định admin / admin nếu chưa tồn tại (mật khẩu được băm bcrypt)
+async function seedDefaultAdmin() {
+  try {
+    const existing = await prisma.user.findUnique({ where: { username: 'admin' } });
+
+    if (!existing) {
+      const passwordHash = await bcrypt.hash('admin', 10);
+      await prisma.user.create({
+        data: { username: 'admin', passwordHash, role: 'admin' },
+      });
+      console.log('[Seed] Đã tạo tài khoản mặc định: admin / admin');
+      return;
+    }
+
+    // Migrate mật khẩu mặc định cũ (admin/123) sang mật khẩu mới admin/admin.
+    // Không đụng vào mật khẩu do người dùng tự đặt (khác cả 123 lẫn admin).
+    const isOldDefault = await bcrypt.compare('123', existing.passwordHash);
+    const isNewDefault = await bcrypt.compare('admin', existing.passwordHash);
+    if (isOldDefault && !isNewDefault) {
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { passwordHash: await bcrypt.hash('admin', 10) },
+      });
+      console.log('[Seed] Đã cập nhật mật khẩu mặc định của admin: "123" → "admin"');
+    }
+
+    // Đảm bảo tài khoản admin luôn có quyền admin
+    if (existing.role !== 'admin') {
+      await prisma.user.update({ where: { id: existing.id }, data: { role: 'admin' } });
+      console.log('[Seed] Đã khôi phục quyền admin cho tài khoản admin');
+    }
+  } catch (err) {
+    console.error('[Seed Error] Tạo tài khoản admin thất bại:', err.message);
+  }
+}
 
 // Hàm khởi tạo dữ liệu mẫu nếu database trống
 async function seedInitialData() {
@@ -147,6 +193,7 @@ server.listen(PORT, async () => {
   console.log(`[SmartHome Backend] Server chạy tại cổng : ${PORT}`);
   console.log(`===============================================`);
 
+  await seedDefaultAdmin();
   await seedInitialData();
   connectMQTT();
   startScheduler();

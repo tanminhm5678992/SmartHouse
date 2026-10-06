@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
+import { getToken } from '../api/authStorage';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000';
 
@@ -7,9 +8,13 @@ export function useSocket({ onSensorData, onDeviceState, onNodeStatus, onActivit
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    const token = getToken();
+    if (!token) return undefined; // Chưa đăng nhập → không mở kết nối realtime
+
     const socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 10,
+      auth: { token },
     });
 
     socket.on('connect', () => {

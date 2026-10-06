@@ -73,6 +73,9 @@ services:
       DATABASE_URL: postgres://postgres:secretpassword@postgres:5432/smarthome?schema=public
       MQTT_BROKER_URL: mqtt://broker_server:1883
       CLIENT_URL: http://localhost:3000
+      # Khóa ký JWT cho chức năng đăng nhập (nên đổi khi triển khai thật)
+      JWT_SECRET: smarthome_jwt_secret_key_2026
+      JWT_EXPIRES_IN: 1d
     depends_on:
       - postgres
       - broker_server

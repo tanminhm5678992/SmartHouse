@@ -1,7 +1,14 @@
 import React from 'react';
-import { Home, Activity, Cpu, Bell, Sliders, CalendarClock, PlugZap } from 'lucide-react';
+import { Home, Activity, Cpu, Bell, Sliders, CalendarClock, PlugZap, LogOut, User, Users } from 'lucide-react';
 
-export default function Header({ activeTab, setActiveTab, isSocketConnected }) {
+// Nhãn hiển thị cho từng quyền (role)
+const ROLE_LABELS = {
+  admin: 'Quản trị viên',
+  manager: 'Quản lý',
+  user: 'Người dùng',
+};
+
+export default function Header({ activeTab, setActiveTab, isSocketConnected, user, onLogout }) {
   return (
     <header className="app-header">
       <div className="brand-section">
@@ -51,6 +58,15 @@ export default function Header({ activeTab, setActiveTab, isSocketConnected }) {
         >
           <Bell size={16} /> Nhật Ký
         </button>
+        {/* Chỉ admin mới thấy tab Quản Lý Người Dùng */}
+        {user?.role === 'admin' && (
+          <button
+            className={`nav-tab-btn ${activeTab === 'users' ? 'active' : ''}`}
+            onClick={() => setActiveTab('users')}
+          >
+            <Users size={16} /> Quản Lý Người Dùng
+          </button>
+        )}
       </nav>
 
       <div className="header-status-group">
@@ -58,6 +74,19 @@ export default function Header({ activeTab, setActiveTab, isSocketConnected }) {
           <span className={`status-dot ${isSocketConnected ? 'online' : 'offline'}`} />
           <span>{isSocketConnected ? 'Realtime Live' : 'Mất Kết Nối'}</span>
         </div>
+
+        {user && (
+          <div className="header-user-group">
+            <div className="header-user-chip" title={`Đã đăng nhập: ${ROLE_LABELS[user.role] || user.role}`}>
+              <User size={14} />
+              <span>{user.username}</span>
+              <span className="header-user-role">{ROLE_LABELS[user.role] || user.role}</span>
+            </div>
+            <button type="button" className="header-logout-btn" onClick={onLogout} title="Đăng xuất">
+              <LogOut size={14} /> Đăng xuất
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

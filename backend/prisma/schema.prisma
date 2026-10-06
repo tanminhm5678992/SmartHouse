@@ -11,6 +11,21 @@ generator client {
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
+// =========================================================
+// NGƯỜI DÙNG ĐĂNG NHẬP (AUTH - JWT)
+// Mật khẩu luôn được băm bằng bcrypt trước khi lưu, không lưu plain-text
+// =========================================================
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(50)
+  passwordHash String   @map("password_hash") @db.VarChar(100)
+  role         String   @default("user") @db.VarChar(20) // 'admin' | 'manager' | 'user'
+  createdAt    DateTime @default(now()) @map("created_at")
+  lastLogin    DateTime? @map("last_login")
+
+  @@map("users")
+}
+
 model Device {
   id          Int           @id @default(autoincrement())
   name        String        @db.VarChar(100)
