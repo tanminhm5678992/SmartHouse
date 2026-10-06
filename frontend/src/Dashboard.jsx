@@ -190,7 +190,7 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           </section>
 
-          {/* Điều khiển Thiết bị (2 Relay + 4 LED) */}
+          {/* Thiết bị Chấp Hành & Cảm Biến Đã Đăng Ký */}
           <section>
             <div className="section-header">
               <div className="section-title">

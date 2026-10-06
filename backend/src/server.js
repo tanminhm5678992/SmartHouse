@@ -24,7 +24,8 @@ const app = express();
 const server = http.createServer(app);
 
 // CORS & Middlewares
-const allowedOrigins = [process.env.CLIENT_URL || 'http://localhost:3000', 'http://127.0.0.1:3000'];
+// Cho phép mọi origin: API đều được bảo vệ bằng JWT (trừ /api/auth/login và /api/health),
+// đồng thời chấp nhận truy cập Web qua cả localhost lẫn IP LAN khi demo trên điện thoại.
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -107,7 +108,6 @@ async function seedInitialData() {
         // Node 1 - Phòng Khách (ESP32 #1)
         { name: 'Relay 1: Đèn trần Phòng Khách', type: 'relay', mqttTopic: 'home/device/relay1', nodeId: 'node1', pin: 'GPIO 5', description: 'Chân IN cắm GPIO 5 (Nguồn 5V, DC- cắm G)', state: 'OFF' },
         { name: 'LED 1: Đèn bàn làm việc', type: 'led', mqttTopic: 'home/device/led1', nodeId: 'node1', pin: 'GPIO 6', description: 'Chân (+) cắm GPIO 6, chân (-) cắm GPIO 3 (0V)', state: 'OFF' },
-        { name: 'LED 2: Đèn trang trí tủ kính', type: 'led', mqttTopic: 'home/device/led2', nodeId: 'node1', pin: 'GPIO 7', description: 'Đèn LED chỉ báo mạng cắm GPIO 7', state: 'OFF' },
         // Node 2 - Phòng Ngủ (ESP32 #2)
         { name: 'Quạt mini 5V Phòng Ngủ (Relay 2)', type: 'fan', mqttTopic: 'home/device/relay2', nodeId: 'node2', pin: 'GPIO 4', description: NODE2_FAN_DESC, state: 'OFF' },
         { name: 'LED 3: Đèn ngủ', type: 'led', mqttTopic: 'home/device/led3', nodeId: 'node2', pin: 'GPIO 5', description: NODE2_LED_DESC, state: 'OFF' },
@@ -134,13 +134,12 @@ async function seedInitialData() {
         });
       }
 
-      console.log('[Seed] Đã khởi tạo thành công 5 thiết bị (Relay 1, LED 1, LED 2, Quạt Node 2, LED 3) và 1 luật tự động!');
+      console.log('[Seed] Đã khởi tạo thành công 4 thiết bị (Relay 1, LED 1, Quạt Node 2, LED 3) và 1 luật tự động!');
     } else {
       // Cập nhật thông tin chân cắm cho các thiết bị cũ nếu chưa có
       const defaultPins = [
         { topic: 'home/device/relay1', pin: 'GPIO 5', desc: 'Chân IN cắm GPIO 5 (Nguồn 5V, DC- cắm G)' },
         { topic: 'home/device/led1', pin: 'GPIO 6', desc: 'Chân (+) cắm GPIO 6, chân (-) cắm GPIO 3 (0V)' },
-        { topic: 'home/device/led2', pin: 'GPIO 7', desc: 'Đèn LED chỉ báo mạng cắm GPIO 7' },
         { topic: 'home/device/relay2', pin: 'GPIO 4', desc: NODE2_FAN_DESC },
         { topic: 'home/device/led3', pin: 'GPIO 5', desc: NODE2_LED_DESC },
       ];

@@ -1,6 +1,6 @@
-# Hệ Thống Smart Home IoT - ESP32-C3 & MQTT EMQX & Home Assistant
+# Hệ Thống Smart Home IoT - ESP32-C3 & MQTT EMQX
 
-Dự án Nhà thông minh hoàn chỉnh với kiến trúc phân tán theo phòng, tích hợp **ESP32-C3**, **MQTT Broker (EMQX)**, **Backend Node.js/Express**, **PostgreSQL (Prisma ORM)**, **Giao diện ReactJS** và **Home Assistant**.
+Dự án Nhà thông minh hoàn chỉnh với kiến trúc phân tán theo phòng, tích hợp **ESP32-C3**, **MQTT Broker (EMQX)**, **Backend Node.js/Express**, **PostgreSQL (Prisma ORM)** và **Giao diện ReactJS**.
 
 ---
 
@@ -31,8 +31,8 @@ Hệ thống sử dụng **2 trạm ESP32-C3**:
 | **ReactJS Frontend** | `3000` | [http://localhost:3000](http://localhost:3000) | Giao diện điều khiển chính (Dark Mode Glassmorphism) |
 | **Backend REST & Socket.IO** | `4000` | [http://localhost:4000/api](http://localhost:4000/api) | API Server + WebSocket |
 | **EMQX Dashboard** | `18083` | [http://localhost:18083](http://localhost:18083) | Tài khoản mặc định: `admin` / `public` |
-| **EMQX MQTT Broker** | `1883` | `localhost:1883` | Cổng TCP cho ESP32 và Home Assistant |
-| **Home Assistant UI** | `8123` | [http://localhost:8123](http://localhost:8123) | Dashboard & Automation công nghiệp |
+| **Mosquitto Broker Local** | `1883` | `localhost:1883` | Cổng TCP cho ESP32 mạng nội bộ kết nối (Tầng 2 - Gateway) |
+| **EMQX Broker Server** | `1884` | `localhost:1884` | Cổng TCP cho Backend kết nối Broker Server (Tầng 3) |
 | **PostgreSQL (Docker)** | `5433` | `localhost:5433` | Database Docker (cổng 5433 tránh đụng Postgres 5432 máy thật) |
 
 ---
@@ -46,7 +46,7 @@ docker compose up -d --build
 ```
 
 Docker sẽ tự động:
-1. Kéo image **EMQX 5.6**, **PostgreSQL 16**, **Home Assistant**.
+1. Kéo image **EMQX 5.6**, **PostgreSQL 16**.
 2. Build container **Backend** (tự động chạy Prisma migration đẩy schema vào database và khởi tạo dữ liệu mẫu).
 3. Build container **Frontend** với Vite và phục vụ qua Nginx.
 
@@ -83,7 +83,7 @@ docker compose down
 ## 5. Thử Nghiệm Mô Phỏng Bằng MQTTX (Khi chưa cắm mạch thật)
 
 Nếu chưa cắm ESP32 thật, bạn có thể dùng công cụ **MQTTX** trên máy để giả lập dữ liệu:
-1. Kết nối tới Broker: `Host: localhost`, `Port: 1883`.
+1. Kết nối tới Broker Local (Mosquitto): `Host: localhost`, `Port: 1883`.
 2. Giả lập gửi nhiệt độ & độ ẩm phòng khách:
    - Topic: `home/sensor/node1/telemetry`
    - Payload (JSON):

@@ -98,7 +98,7 @@ model ActivityLog {
   id        BigInt   @id @default(autoincrement())
   deviceId  Int?     @map("device_id")
   action    String   @db.VarChar(100)
-  source    String   @db.VarChar(20) // 'auto' | 'manual' | 'HA'
+  source    String   @db.VarChar(20) // 'auto' | 'manual'
   createdAt DateTime @default(now()) @map("created_at")
 
   device    Device?  @relation(fields: [deviceId], references: [id], onDelete: SetNull)

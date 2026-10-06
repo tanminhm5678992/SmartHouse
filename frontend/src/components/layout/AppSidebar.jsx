@@ -67,7 +67,7 @@ export default function AppSidebar({
         {!collapsed && (
           <div className="sidebar-brand-text">
             <div className="sidebar-brand-title">SmartHome IoT</div>
-            <div className="sidebar-brand-sub">ESP32-C3 · MQTT · HA</div>
+            <div className="sidebar-brand-sub">ESP32-C3 · MQTT · React</div>
           </div>
         )}
       </div>

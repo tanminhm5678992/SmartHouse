@@ -183,6 +183,7 @@ export default function AutomationBuilder({ automations, devices, onReload }) {
                     <option value="<">Nhỏ hơn (&lt;)</option>
                     <option value=">=">Lớn hơn hoặc bằng (&gt;=)</option>
                     <option value="<=">Nhỏ hơn hoặc bằng (&lt;=)</option>
+                    <option value="==">Bằng (=)</option>
                   </select>
                 </div>
 

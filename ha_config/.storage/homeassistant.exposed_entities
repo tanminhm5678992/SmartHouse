@@ -25,13 +25,6 @@
             "should_expose": false
           }
         }
-      },
-      "automation.tu_dong_bat_quat_khi_nhiet_do_phong_khach_30degc": {
-        "assistants": {
-          "conversation": {
-            "should_expose": false
-          }
-        }
       }
     }
   }

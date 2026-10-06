@@ -17,7 +17,7 @@ export default function Header({ activeTab, setActiveTab, isSocketConnected, use
         </div>
         <div>
           <h1 className="brand-title">Smart Home IoT</h1>
-          <p className="brand-subtitle">ESP32-C3 • MQTT EMQX • Home Assistant</p>
+          <p className="brand-subtitle">ESP32-C3 • MQTT EMQX • ReactJS</p>
         </div>
       </div>
 

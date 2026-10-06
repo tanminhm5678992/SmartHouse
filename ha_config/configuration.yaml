@@ -1,101 +1,11 @@
+
+# Loads default set of integrations. Do not remove.
 default_config:
 
-http:
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 127.0.0.1
-    - 172.16.0.0/12
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
 
-# Cấu hình MQTT Broker (kết nối trực tiếp tới container EMQX)
-mqtt:
-  sensor:
-    # Cảm biến Node 1 - Phòng khách
-    - name: "Nhiệt độ phòng khách"
-      state_topic: "home/sensor/node1/telemetry"
-      value_template: "{{ value_json.temp }}"
-      unit_of_measurement: "°C"
-      device_class: temperature
-      state_class: measurement
-
-    - name: "Độ ẩm phòng khách"
-      state_topic: "home/sensor/node1/telemetry"
-      value_template: "{{ value_json.hum }}"
-      unit_of_measurement: "%"
-      device_class: humidity
-      state_class: measurement
-
-    # Node 2 - Phòng ngủ: KHÔNG có cảm biến DHT11 (chỉ điều khiển relay quạt + LED)
-
-  binary_sensor:
-    - name: "Trạng thái Node 1"
-      state_topic: "home/sensor/node1/status"
-      payload_on: "online"
-      payload_off: "offline"
-      device_class: connectivity
-
-    - name: "Trạng thái Node 2"
-      state_topic: "home/sensor/node2/status"
-      payload_on: "online"
-      payload_off: "offline"
-      device_class: connectivity
-
-  switch:
-    # Relay 1 - Phòng khách
-    - name: "Relay 1 Phòng Khách"
-      unique_id: "relay_1_pk"
-      state_topic: "home/device/relay1/state"
-      command_topic: "home/device/relay1/command"
-      payload_on: "ON"
-      payload_off: "OFF"
-      state_on: "ON"
-      state_off: "OFF"
-
-    # Relay 2 - Phòng ngủ (quạt mini 5V qua relay, GPIO 4)
-    - name: "Relay 2 Phòng Ngủ"
-      unique_id: "relay_2_pn"
-      state_topic: "home/device/relay2/state"
-      command_topic: "home/device/relay2/command"
-      payload_on: "ON"
-      payload_off: "OFF"
-      state_on: "ON"
-      state_off: "OFF"
-
-  # Đèn LED điều khiển được độ sáng (PWM): gửi lệnh dạng "SET:<0-100>" tới topic command
-  light:
-    # LED 1 - Đèn bàn làm việc
-    - name: "LED 1 Đèn Bàn"
-      unique_id: "led_1_desk"
-      state_topic: "home/device/led1/state"
-      command_topic: "home/device/led1/command"
-      payload_on: "ON"
-      payload_off: "OFF"
-      state_on: "ON"
-      state_off: "OFF"
-      brightness_command_topic: "home/device/led1/command"
-      brightness_command_template: "SET:{{ (value | int / 255 * 100) | round(0) | int }}"
-      brightness_scale: 255
-
-    # LED 3 - Đèn ngủ
-    - name: "LED 3 Đèn Ngủ"
-      unique_id: "led_3_bed"
-      state_topic: "home/device/led3/state"
-      command_topic: "home/device/led3/command"
-      payload_on: "ON"
-      payload_off: "OFF"
-      state_on: "ON"
-      state_off: "OFF"
-      brightness_command_topic: "home/device/led3/command"
-      brightness_command_template: "SET:{{ (value | int / 255 * 100) | round(0) | int }}"
-      brightness_scale: 255
-
-# Kịch bản tự động hóa mẫu trên Home Assistant
-automation:
-  - alias: "Tự động bật quạt khi nhiệt độ phòng khách > 30°C"
-    trigger:
-      - platform: numeric_state
-        entity_id: sensor.nhiet_do_phong_khach
-        above: 30
-    action:
-      - service: switch.turn_on
-        target:
-          entity_id: switch.relay_1_phong_khach
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml

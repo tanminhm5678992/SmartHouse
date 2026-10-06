@@ -7,7 +7,7 @@ import {
 // =========================================================
 // Bảng "Kiến trúc 5 tầng & Tình trạng hệ thống"
 // Phản ánh ĐÚNG kiến trúc thật của dự án (theo docker-compose.yml):
-//   ESP32-C3 → Mosquitto (gateway) → EMQX (server) → Backend + PostgreSQL → Web / Home Assistant
+//   ESP32-C3 → Mosquitto (gateway) → EMQX (server) → Backend + PostgreSQL → Web React
 // Chỉ báo trạng thái LIVE khi suy ra được từ dữ liệu Socket.IO/REST hiện có.
 // Những gì trình duyệt KHÔNG thể kiểm tra sẽ ghi rõ, không báo xanh giả.
 // =========================================================
@@ -15,7 +15,6 @@ import {
 // Cổng/dịch vụ lấy từ docker-compose.yml
 const SERVICES = [
   { name: 'EMQX Dashboard', desc: 'Quản trị Broker Server', url: 'http://localhost:18083', port: '18083', auth: 'admin / public' },
-  { name: 'Home Assistant', desc: 'Dashboard & Automation', url: 'http://localhost:8123', port: '8123', auth: 'Tài khoản HA' },
   { name: 'Backend REST API', desc: 'Health check', url: 'http://localhost:4000/api/health', port: '4000', auth: 'Không cần' },
   { name: 'React Dashboard', desc: 'Trang đang xem', url: null, port: '3000', auth: '—' },
 ];
@@ -153,7 +152,7 @@ export default function SystemStatus({
     {
       n: 5,
       title: 'Tầng 5 · Ứng dụng người dùng',
-      subtitle: 'ReactJS (Nginx :3000) + Home Assistant (:8123)',
+      subtitle: 'ReactJS (Nginx :3000)',
       Icon: MonitorSmartphone,
       color: '#f59e0b',
       status: <StatusPill kind="ok">Web Dashboard đang mở</StatusPill>,
@@ -161,7 +160,7 @@ export default function SystemStatus({
         <div className="sys-node-line">
           <Home size={13} color="var(--text-dim)" />
           <span className="sys-dim">
-            Home Assistant điều khiển cùng thiết bị qua MQTT (relay/led) và đọc cảm biến DHT11 của 2 node
+            Dashboard điều khiển thiết bị qua REST API + nhận realtime qua Socket.IO (JWT)
           </span>
         </div>
       ),
@@ -240,7 +239,7 @@ export default function SystemStatus({
           <div className="sys-note">
             <WifiOff size={13} />
             <span>
-              Trạng thái EMQX và Home Assistant không thể kiểm tra từ trình duyệt nên chỉ hiển thị
+              Trạng thái EMQX không thể kiểm tra từ trình duyệt nên chỉ hiển thị
               trạng thái suy luận (có/không có bản tin qua Bridge) — bấm vào để mở trực tiếp.
             </span>
           </div>

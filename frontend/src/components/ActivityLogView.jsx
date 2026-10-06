@@ -10,7 +10,6 @@ import { Bell, Clock, Search, Filter } from 'lucide-react';
 // =========================================================
 function deriveTrigger(log) {
   const action = log?.action || '';
-  if (log?.source === 'HA') return { key: 'ha', label: 'Home Assistant', cls: 'HA' };
   if (action.includes('Theo lịch hẹn')) return { key: 'schedule', label: 'Lịch hẹn (Auto)', cls: 'schedule' };
   if (action.includes('(Luật:')) return { key: 'rule', label: 'Luật tự động', cls: 'auto' };
   if (action.startsWith('Đăng ký') || action.startsWith('Chỉnh sửa') || action.startsWith('Hủy đăng ký')) {
@@ -26,7 +25,6 @@ const FILTERS = [
   { key: 'rule', label: 'Luật tự động' },
   { key: 'manual', label: 'Thủ công' },
   { key: 'devices', label: 'Quản lý thiết bị' },
-  { key: 'ha', label: 'Home Assistant' },
 ];
 
 export default function ActivityLogView({ logs }) {

@@ -5,7 +5,7 @@
   "data": {
     "users": [
       {
-        "id": "1b1b415420ea41bba5dfea5335725752",
+        "id": "67e106038b66449184ffd8c350bfb69a",
         "group_ids": [
           "system-read-only"
         ],
@@ -33,16 +33,16 @@
     "credentials": [],
     "refresh_tokens": [
       {
-        "id": "7b5ac8f422424423ab30322466356352",
-        "user_id": "1b1b415420ea41bba5dfea5335725752",
+        "id": "7aa4d524180f45cea7777d9477ce14f1",
+        "user_id": "67e106038b66449184ffd8c350bfb69a",
         "client_id": null,
         "client_name": null,
         "client_icon": null,
         "token_type": "system",
-        "created_at": "2026-10-04T07:28:27.423142+00:00",
+        "created_at": "2026-10-06T13:14:04.142297+00:00",
         "access_token_expiration": 1800.0,
-        "token": "e8ca4b6ee387eef0fbaa17735d63a6aa0bb117087fe642348837e80419ac0f011e6edc7dc29d000efdae74315b3739cc21bc3b02bd13fe93bcd1453b7de01d38",
-        "jwt_key": "3c6215a0044b939004136bc0dd69e05a796ef0803475e1627fd355738d0e3f98a1b22bf87d52944444eeddf937b61740836750d31ff66064dcbdfc7c713f3d2e",
+        "token": "933d18281683732c173f53d43c9396ac44dad1c9186a637cc9d2d9fdba91b58c97a3ead07fd2068c44525e37c98b4a471b13dc98e8d4a6105f6b3da291812f8b",
+        "jwt_key": "ae816f73c439da6f2204280578d3d1c7e03d3e02a7ee8b72afd489cbbd3c4060048b3c7a75a1d76b0684703b35665c7b95b528174df3e45f84c21914f4c6a4ec",
         "last_used_at": null,
         "last_used_ip": null,
         "expire_at": null,

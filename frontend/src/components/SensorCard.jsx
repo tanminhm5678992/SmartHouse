@@ -44,7 +44,8 @@ export default function SensorCard({ nodeId, title, room, data, status }) {
         <div className="node-title-group">
           <h3>{title}</h3>
           <span className="node-badge">
-            <Radio size={12} color="var(--primary)" /> {room} • DHT11 (GPIO 4)
+            <Radio size={12} color="var(--primary)" /> {room}
+            {nodeId === 'node1' ? ' • DHT11 (GPIO 4)' : ' • Không DHT11 • Chỉ điều khiển'}
           </span>
         </div>
         <div className="status-badge">
@@ -106,7 +107,15 @@ export default function SensorCard({ nodeId, title, room, data, status }) {
       </div>
 
       <div className="sensor-topic-line">
-        <code>home/sensor/{nodeId}/telemetry</code> · LWT <code>home/sensor/{nodeId}/status</code> · DHT11 chân GPIO 4
+        {nodeId === 'node1' ? (
+          <>
+            <code>home/sensor/{nodeId}/telemetry</code> · LWT <code>home/sensor/{nodeId}/status</code> · DHT11 chân GPIO 4
+          </>
+        ) : (
+          <>
+            LWT <code>home/sensor/{nodeId}/status</code> · Node này không có DHT11 (không gửi telemetry)
+          </>
+        )}
       </div>
     </div>
   );

@@ -98,23 +98,6 @@ services:
     networks:
       - smarthome_net
 
-  # Hệ thống Home Assistant tích hợp (kết nối vào Broker Server)
-  homeassistant:
-    image: ghcr.io/home-assistant/home-assistant:stable
-    container_name: smarthome_homeassistant
-    restart: always
-    privileged: true
-    ports:
-      - "8123:8123"
-    environment:
-      - TZ=Asia/Ho_Chi_Minh
-    volumes:
-      - ./ha_config:/config
-    depends_on:
-      - broker_server
-    networks:
-      - smarthome_net
-
 volumes:
   emqx_data:
   pg_data:

@@ -50,10 +50,6 @@ export default function AppTopbar({
           <Globe size={13} /> EMQX
           <ExternalLink size={11} />
         </a>
-        <a className="topbar-link" href="http://localhost:8123" target="_blank" rel="noopener noreferrer">
-          <Globe size={13} /> Home Assistant
-          <ExternalLink size={11} />
-        </a>
 
         <button type="button" className="topbar-refresh" onClick={onRefresh} title={`Đồng bộ REST lần cuối: ${lastSyncText}`}>
           <RefreshCw size={14} />
